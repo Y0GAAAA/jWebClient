@@ -41,9 +41,11 @@ public class StreamUtility {
 
                 int taskCount = TaskInfo.getRunningTaskCount();
 
+                MaximumByteRate = maximumBytesPerSecond;
+
                 if (taskCount > 0) {
 
-                    MaximumByteRate = maximumBytesPerSecond / taskCount;
+                    MaximumByteRate /= taskCount;
 
                 }
 
