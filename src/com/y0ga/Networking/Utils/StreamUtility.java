@@ -1,7 +1,7 @@
 package com.y0ga.Networking.Utils;
 
 import com.y0ga.Networking.Enums.LimitationMode;
-import com.y0ga.Networking.TaskInfo;
+import com.y0ga.Networking.ConcurrentTaskCounter;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -15,7 +15,7 @@ public class StreamUtility {
 
     }
 
-    public static void copyStream(long maximumBytesPerSecond, int bufferSize, LimitationMode limitationMode, InputStream input, OutputStream output) throws IOException {
+    public static void copyStream(long maximumBytesPerSecond, int bufferSize, ConcurrentTaskCounter taskCounter, LimitationMode limitationMode, InputStream input, OutputStream output) throws IOException {
 
         long BufferCopyStartTime    = 0;
         long BufferCopyEndTime      = 0;
@@ -36,11 +36,11 @@ public class StreamUtility {
 
             BufferCopyStartTime = TimeUtility.get_ms();
 
+            MaximumByteRate = maximumBytesPerSecond;
+
             if (limitationMode == LimitationMode.Global) {
 
-                int taskCount = TaskInfo.getRunningTaskCount();
-
-                MaximumByteRate = maximumBytesPerSecond;
+                int taskCount = taskCounter.getRunningTaskCount();
 
                 if (taskCount > 0) {
 

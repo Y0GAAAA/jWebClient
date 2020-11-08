@@ -1,5 +1,6 @@
 package test;
 
+import com.y0ga.Networking.WebClient;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -19,6 +20,19 @@ public class ConcurrencyTests {
         boolean webClientBusy = Shared.client.isBusy();
 
         Assert.assertEquals(futureRunning, webClientBusy);
+
+    }
+
+    @Test
+    public void testIsBusyDoesNotImpactOtherInstances() throws Exception {
+
+        WebClient client = new WebClient();
+
+        client.downloadDataAsync(Shared.DUMMY_FILE_URL);
+
+        WebClient secondClient = new WebClient();
+
+        Assert.assertEquals(false, secondClient.isBusy());
 
     }
 

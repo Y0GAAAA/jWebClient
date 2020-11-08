@@ -20,13 +20,18 @@ import java.util.concurrent.Future;
 
 public class WebClient {
 
+    //PRIVATE
+
+    private final ExecutorService ThreadPool = Executors.newCachedThreadPool();
+    private final ConcurrentTaskCounter TaskCounter = new ConcurrentTaskCounter();
+
     //EXPOSED PROPERTIES
 
     private BandwidthLimitation     DownloadBandwidthLimit  = BandwidthLimitation.Unlimited;
     private BandwidthLimitation     UploadBandwidthLimit    = BandwidthLimitation.Unlimited;
 
     private String                  CurrentUserAgentString  = "Java WebClient";
-    private int                     BufferSize              = 1024;
+    private int                     BufferSize              = 1024 * 4;
     private Charset                 Encoding                = StandardCharsets.UTF_8;
     private HashMap<String, String> internalHeaders         = new HashMap<>();
     private LimitationMode          BandwidthLimitationMode = LimitationMode.Global;
@@ -91,7 +96,7 @@ public class WebClient {
     }
     public boolean isBusy() {
 
-        return TaskInfo.getRunningTaskCount() > 0;
+        return TaskCounter.getRunningTaskCount() > 0;
 
     }
 
@@ -99,7 +104,7 @@ public class WebClient {
 
     private byte[] internalDownloadData(URL url, RequestSpecification specification, SyncType syncType) throws IOException, IOException {
 
-        if (syncType == SyncType.Synchronous) { TaskInfo.incrementRunningTaskCount(); }
+        if (syncType == SyncType.Synchronous) { TaskCounter.incrementRunningTaskCount(); }
 
         HttpURLConnection remoteConnection = getConnection(url, HttpMethod.GET, specification);
 
@@ -109,9 +114,9 @@ public class WebClient {
 
         ByteArrayOutputStream finalOutput = new ByteArrayOutputStream();
 
-        StreamUtility.copyStream(DownloadBandwidthLimit.getMaximumBytesSecond(), this.BufferSize, this.BandwidthLimitationMode,connectionInputStream, finalOutput);
+        StreamUtility.copyStream(DownloadBandwidthLimit.getMaximumBytesSecond(), this.BufferSize, this.TaskCounter, this.BandwidthLimitationMode,connectionInputStream, finalOutput);
 
-        TaskInfo.decrementRunningTaskCount();
+        TaskCounter.decrementRunningTaskCount();
 
         return finalOutput.toByteArray();
 
@@ -167,21 +172,21 @@ public class WebClient {
 
     public Future<byte[]> downloadDataAsync(URL url) {
 
-        TaskInfo.incrementRunningTaskCount();
+        TaskCounter.incrementRunningTaskCount();
 
         return getFuture(() -> internalDownloadData(url, RequestSpecification.DownloadBytes, SyncType.Asynchronous));
 
     }
     public Future<String> downloadStringAsync(URL url) {
 
-        TaskInfo.incrementRunningTaskCount();
+        TaskCounter.incrementRunningTaskCount();
 
         return getFuture(() -> internalDownloadString(url, RequestSpecification.DownloadString, SyncType.Asynchronous));
 
     }
     public Future<Boolean> downloadFileAsync(URL remoteFileUrl, File localFile) {
 
-        TaskInfo.incrementRunningTaskCount();
+        TaskCounter.incrementRunningTaskCount();
 
         return getFuture(() -> internalDownloadFile(remoteFileUrl, localFile, RequestSpecification.DownloadFile, SyncType.Asynchronous));
 
@@ -189,7 +194,7 @@ public class WebClient {
 
     private byte[] internalUploadData(URL url, byte[] data, RequestSpecification specification, SyncType syncType) throws IOException {
 
-        if (syncType == SyncType.Synchronous) { TaskInfo.incrementRunningTaskCount(); }
+        if (syncType == SyncType.Synchronous) { TaskCounter.incrementRunningTaskCount(); }
 
         HttpURLConnection remoteConnection = getConnection(url, HttpMethod.POST, specification);
 
@@ -202,7 +207,7 @@ public class WebClient {
 
         ByteArrayInputStream inputDataStream = new ByteArrayInputStream(data);
 
-        StreamUtility.copyStream(this.UploadBandwidthLimit.getMaximumBytesSecond(), this.BufferSize, this.BandwidthLimitationMode, inputDataStream, connectionOutputStream);
+        StreamUtility.copyStream(this.UploadBandwidthLimit.getMaximumBytesSecond(), this.BufferSize, this.TaskCounter, this.BandwidthLimitationMode, inputDataStream, connectionOutputStream);
 
         StreamUtility.closeStreamTunnel(inputDataStream, connectionOutputStream);
 
@@ -210,13 +215,13 @@ public class WebClient {
 
         ByteArrayOutputStream responseOutputStream = new ByteArrayOutputStream();
 
-        StreamUtility.copyStream(this.DownloadBandwidthLimit.getMaximumBytesSecond(), this.BufferSize, this.BandwidthLimitationMode, connectionInputStream, responseOutputStream);
+        StreamUtility.copyStream(this.DownloadBandwidthLimit.getMaximumBytesSecond(), this.BufferSize, this.TaskCounter, this.BandwidthLimitationMode, connectionInputStream, responseOutputStream);
 
         byte[] responseData = responseOutputStream.toByteArray();
 
         StreamUtility.closeStreamTunnel(connectionInputStream, responseOutputStream);
 
-        TaskInfo.decrementRunningTaskCount();
+        TaskCounter.decrementRunningTaskCount();
 
         return responseData;
 
@@ -250,14 +255,14 @@ public class WebClient {
 
     public Future<byte[]> uploadDataAsync(URL url, byte[] data) {
 
-        TaskInfo.incrementRunningTaskCount();
+        TaskCounter.incrementRunningTaskCount();
 
         return getFuture(() -> internalUploadData(url, data, RequestSpecification.PostBytes, SyncType.Asynchronous));
 
     }
     public Future<String> uploadStringAsync(URL url, String string) throws IOException {
 
-        TaskInfo.incrementRunningTaskCount();
+        TaskCounter.incrementRunningTaskCount();
 
         return getFuture(() -> internalUploadString(url, string, RequestSpecification.PostString, SyncType.Asynchronous));
 
@@ -292,10 +297,8 @@ public class WebClient {
 
     private <K> Future<K> getFuture(Callable<K> r) {
 
-        return (Future<K>) ThreadPool.submit(r);
+        return ThreadPool.submit(r);
 
     }
-
-    private final ExecutorService ThreadPool =  Executors.newCachedThreadPool();
 
 }
