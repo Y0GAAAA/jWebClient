@@ -17,4 +17,6 @@ public class Shared {
 
     public static final WebClient client = new WebClient();
 
+    public static final URL DUMMY_FILE_URL = GetURLFromString("http://www.ovh.net/files/1Mio.dat");
+
 }

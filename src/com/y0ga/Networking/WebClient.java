@@ -13,6 +13,7 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -96,23 +97,15 @@ public class WebClient {
 
     //FUNCTIONS
 
-    private byte[] internalDownloadData(URL url, RequestSpecification specification, SyncType syncType) throws ConnectionException {
+    private byte[] internalDownloadData(URL url, RequestSpecification specification, SyncType syncType) throws IOException, IOException {
 
         if (syncType == SyncType.Synchronous) { TaskInfo.incrementRunningTaskCount(); }
 
         HttpURLConnection remoteConnection = getConnection(url, HttpMethod.GET, specification);
 
-        if (remoteConnection == null) {
-            return new byte[]{};
-        }
-
         InputStream connectionInputStream = null;
 
-        try {
-            connectionInputStream = remoteConnection.getInputStream();
-        } catch (IOException ignored) {
-            return new byte[]{};
-        }
+        connectionInputStream = remoteConnection.getInputStream();
 
         ByteArrayOutputStream finalOutput = new ByteArrayOutputStream();
 
@@ -123,7 +116,7 @@ public class WebClient {
         return finalOutput.toByteArray();
 
     }
-    private String internalDownloadString(URL url, RequestSpecification specification, SyncType syncType) throws ConnectionException {
+    private String internalDownloadString(URL url, RequestSpecification specification, SyncType syncType) throws IOException {
 
         byte[] data = internalDownloadData(url, specification, syncType);
 
@@ -132,7 +125,7 @@ public class WebClient {
         return new String(data, this.Encoding);
 
     }
-    private boolean internalDownloadFile(URL fileUrl, File localFile, RequestSpecification specification, SyncType syncType) throws FileNotEradicableException, ConnectionException {
+    private boolean internalDownloadFile(URL fileUrl, File localFile, RequestSpecification specification, SyncType syncType) throws FileNotEradicableException, IOException {
 
         byte[] fileData = internalDownloadData(fileUrl, specification, syncType);
 
@@ -156,17 +149,17 @@ public class WebClient {
 
     }
 
-    public byte[] downloadData(URL url) throws ConnectionException {
+    public byte[] downloadData(URL url) throws IOException {
 
         return internalDownloadData(url, RequestSpecification.DownloadBytes, SyncType.Synchronous);
 
     }
-    public String downloadString(URL url) throws ConnectionException {
+    public String downloadString(URL url) throws IOException {
 
         return internalDownloadString(url, RequestSpecification.DownloadString, SyncType.Synchronous);
 
     }
-    public boolean downloadFile(URL url, File localFile) throws FileNotEradicableException, ConnectionException {
+    public boolean downloadFile(URL url, File localFile) throws FileNotEradicableException, IOException {
 
         return internalDownloadFile(url, localFile, RequestSpecification.DownloadFile, SyncType.Synchronous);
 
@@ -176,46 +169,36 @@ public class WebClient {
 
         TaskInfo.incrementRunningTaskCount();
 
-        return ThreadPool.submit(() -> internalDownloadData(url, RequestSpecification.DownloadBytes, SyncType.Asynchronous));
+        return getFuture(() -> internalDownloadData(url, RequestSpecification.DownloadBytes, SyncType.Asynchronous));
 
     }
     public Future<String> downloadStringAsync(URL url) {
 
         TaskInfo.incrementRunningTaskCount();
 
-        return ThreadPool.submit(() -> internalDownloadString(url, RequestSpecification.DownloadString, SyncType.Asynchronous));
+        return getFuture(() -> internalDownloadString(url, RequestSpecification.DownloadString, SyncType.Asynchronous));
 
     }
     public Future<Boolean> downloadFileAsync(URL remoteFileUrl, File localFile) {
 
         TaskInfo.incrementRunningTaskCount();
 
-        return ThreadPool.submit(() -> internalDownloadFile(remoteFileUrl, localFile, RequestSpecification.DownloadFile, SyncType.Asynchronous));
+        return getFuture(() -> internalDownloadFile(remoteFileUrl, localFile, RequestSpecification.DownloadFile, SyncType.Asynchronous));
 
     }
 
-    private byte[] internalUploadData(URL url, byte[] data, RequestSpecification specification, SyncType syncType) throws ConnectionException {
+    private byte[] internalUploadData(URL url, byte[] data, RequestSpecification specification, SyncType syncType) throws IOException {
 
         if (syncType == SyncType.Synchronous) { TaskInfo.incrementRunningTaskCount(); }
 
         HttpURLConnection remoteConnection = getConnection(url, HttpMethod.POST, specification);
-
-        if (remoteConnection == null) {
-            return new byte[]{};
-        }
 
         remoteConnection.setFixedLengthStreamingMode(data.length);
 
         InputStream connectionInputStream = null;
         OutputStream connectionOutputStream = null;
 
-        try {
-
-            connectionOutputStream = remoteConnection.getOutputStream();
-
-        } catch (IOException ex) {
-            return new byte[]{};
-        }
+        connectionOutputStream = remoteConnection.getOutputStream();
 
         ByteArrayInputStream inputDataStream = new ByteArrayInputStream(data);
 
@@ -223,13 +206,7 @@ public class WebClient {
 
         StreamUtility.closeStreamTunnel(inputDataStream, connectionOutputStream);
 
-        try {
-
-            connectionInputStream = remoteConnection.getInputStream();
-
-        } catch (IOException ex) {
-            return new byte[]{};
-        }
+        connectionInputStream = remoteConnection.getInputStream();
 
         ByteArrayOutputStream responseOutputStream = new ByteArrayOutputStream();
 
@@ -244,7 +221,7 @@ public class WebClient {
         return responseData;
 
     }
-    private String internalUploadString(URL url, String string, RequestSpecification specification, SyncType syncType) throws ConnectionException {
+    private String internalUploadString(URL url, String string, RequestSpecification specification, SyncType syncType) throws IOException {
 
         byte[] stringBytes = string.getBytes(this.Encoding);
         byte[] response = internalUploadData(url, stringBytes, specification, syncType);
@@ -260,67 +237,65 @@ public class WebClient {
 
     }
 
-    public byte[] uploadData(URL url, byte[] data) throws ConnectionException {
+    public byte[] uploadData(URL url, byte[] data) throws IOException {
 
         return internalUploadData(url, data, RequestSpecification.PostBytes, SyncType.Synchronous);
 
     }
-    public String uploadString(URL url, String string) throws ConnectionException {
+    public String uploadString(URL url, String string) throws IOException {
 
         return internalUploadString(url, string, RequestSpecification.PostString, SyncType.Synchronous);
 
     }
 
-    public Future<byte[]> uploadDataAsync(URL url, byte[] data) throws ConnectionException {
+    public Future<byte[]> uploadDataAsync(URL url, byte[] data) {
 
         TaskInfo.incrementRunningTaskCount();
 
-        return ThreadPool.submit(() -> internalUploadData(url, data, RequestSpecification.PostBytes, SyncType.Asynchronous));
+        return getFuture(() -> internalUploadData(url, data, RequestSpecification.PostBytes, SyncType.Asynchronous));
 
     }
-    public Future<String> uploadStringAsync(URL url, String string) throws ConnectionException {
+    public Future<String> uploadStringAsync(URL url, String string) throws IOException {
 
         TaskInfo.incrementRunningTaskCount();
 
-        return ThreadPool.submit(() -> internalUploadString(url, string, RequestSpecification.PostString, SyncType.Asynchronous));
+        return getFuture(() -> internalUploadString(url, string, RequestSpecification.PostString, SyncType.Asynchronous));
 
     }
 
-    private HttpURLConnection getConnection(URL url, HttpMethod method, RequestSpecification specification) {
+    private HttpURLConnection getConnection(URL url, HttpMethod method, RequestSpecification specification) throws IOException {
 
         HttpURLConnection remoteHostConnection = null;
 
-        try {
+        remoteHostConnection = (HttpURLConnection) url.openConnection();
 
-            remoteHostConnection = (HttpURLConnection) url.openConnection();
+        remoteHostConnection.setRequestMethod(method.getMethodString());
 
-            remoteHostConnection.setRequestMethod(method.getMethodString());
+        remoteHostConnection.setDoOutput(method.getDoOutput());
+        remoteHostConnection.setDoInput(true);
 
-            remoteHostConnection.setDoOutput(method.getDoOutput());
-            remoteHostConnection.setDoInput(true);
+        remoteHostConnection.setRequestProperty("User-Agent", CurrentUserAgentString);
 
-            remoteHostConnection.setRequestProperty("User-Agent", CurrentUserAgentString);
+        specification.SetHeaders(remoteHostConnection);
 
-            specification.SetHeaders(remoteHostConnection);
+        for (String headerKey : this.internalHeaders.keySet()) {
 
-            if (!this.internalHeaders.isEmpty()) {
+            String headerValue = this.internalHeaders.get(headerKey);
 
-                for (String headerKey : this.internalHeaders.keySet()) {
+            remoteHostConnection.setRequestProperty(headerKey, headerValue);
 
-                    String headerValue = this.internalHeaders.get(headerKey);
-
-                    remoteHostConnection.setRequestProperty(headerKey, headerValue);
-
-                }
-
-            }
-
-        } catch (Exception exc) {return null;}
+        }
 
         return remoteHostConnection;
 
     }
 
-    private static final ExecutorService ThreadPool =  Executors.newCachedThreadPool();
+    private <K> Future<K> getFuture(Callable<K> r) {
+
+        return (Future<K>) ThreadPool.submit(r);
+
+    }
+
+    private final ExecutorService ThreadPool =  Executors.newCachedThreadPool();
 
 }

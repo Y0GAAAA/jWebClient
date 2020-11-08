@@ -1,7 +1,6 @@
 package com.y0ga.Networking.Utils;
 
 import com.y0ga.Networking.Enums.LimitationMode;
-import com.y0ga.Networking.Exceptions.ConnectionException;
 import com.y0ga.Networking.TaskInfo;
 
 import java.io.IOException;
@@ -16,7 +15,7 @@ public class StreamUtility {
 
     }
 
-    public static void copyStream(long maximumBytesPerSecond, int bufferSize, LimitationMode limitationMode, InputStream input, OutputStream output) throws ConnectionException {
+    public static void copyStream(long maximumBytesPerSecond, int bufferSize, LimitationMode limitationMode, InputStream input, OutputStream output) throws IOException {
 
         long BufferCopyStartTime    = 0;
         long BufferCopyEndTime      = 0;
@@ -71,18 +70,7 @@ public class StreamUtility {
 
                     output.write(readBuffer, 0, justRead);
 
-                } catch (IOException ex) {
-
-                    try {
-
-                        input.close();
-                        output.close();
-
-                    } catch (IOException ignored){}
-
-                    throw new ConnectionException("Underlying connection/streams were unexpectedly closed");
-
-                }
+                } catch (IOException ex) { closeStreamTunnel(input, output); throw ex; }
 
             }
 

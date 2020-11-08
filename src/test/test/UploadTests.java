@@ -4,6 +4,7 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -26,13 +27,16 @@ public class UploadTests {
     @BeforeClass
     public static void startEchoServer() throws Exception {
 
-        System.out.println("Starting echo server...");
-
         EchoServer = new RawPostEchoServer();
 
         EchoServer.start();
 
-        System.out.println("Started echo server.");
+    }
+
+    @AfterClass
+    public static void stopEchoServer() throws Exception {
+
+        EchoServer.stop();
 
     }
 
@@ -90,6 +94,12 @@ public class UploadTests {
 
             server.createContext("/post_echo", new PostHandler());
             server.start();
+
+        }
+
+        void stop() throws Exception {
+
+            server.stop(0);
 
         }
 
