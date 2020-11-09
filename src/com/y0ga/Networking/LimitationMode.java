@@ -1,4 +1,4 @@
-package com.y0ga.Networking.Enums;
+package com.y0ga.Networking;
 
 public enum LimitationMode {
 

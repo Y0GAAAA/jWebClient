@@ -89,7 +89,7 @@ public class WebClient {
 
     //GETTERS
 
-    public HashMap<String, String> AdditionalHeaders() {
+    public HashMap<String, String> Headers() {
 
         return internalHeaders;
 

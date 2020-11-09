@@ -1,13 +1,11 @@
-package test;
+package tests;
 
 import com.y0ga.Networking.BandwidthLimitation;
-import com.y0ga.Networking.Enums.LimitationMode;
+import com.y0ga.Networking.LimitationMode;
 import com.y0ga.Networking.SizeUnit;
-import com.y0ga.Networking.Utils.TimeUtility;
 import com.y0ga.Networking.WebClient;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.concurrent.Callable;
 
 import static com.y0ga.Networking.Utils.TimeUtility.get_ms;

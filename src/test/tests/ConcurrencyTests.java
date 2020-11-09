@@ -1,12 +1,9 @@
-package test;
+package tests;
 
 import com.y0ga.Networking.WebClient;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 public class ConcurrencyTests {

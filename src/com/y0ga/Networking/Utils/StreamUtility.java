@@ -1,6 +1,6 @@
 package com.y0ga.Networking.Utils;
 
-import com.y0ga.Networking.Enums.LimitationMode;
+import com.y0ga.Networking.LimitationMode;
 import com.y0ga.Networking.ConcurrentTaskCounter;
 
 import java.io.IOException;
