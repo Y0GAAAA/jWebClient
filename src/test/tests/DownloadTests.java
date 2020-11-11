@@ -90,10 +90,7 @@ public class DownloadTests {
         File filePath = new File("test_example.html");
 
         filePath.deleteOnExit();
-
-        boolean result = Shared.client.downloadFile(EXAMPLE_WEBSITE, filePath);
-
-        Assert.assertTrue(result);
+        Shared.client.downloadFile(EXAMPLE_WEBSITE, filePath);
 
         byte[] fileBytes = Files.readAllBytes(filePath.toPath());
 
