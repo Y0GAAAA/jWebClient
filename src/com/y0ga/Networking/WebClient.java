@@ -1,6 +1,5 @@
 package com.y0ga.Networking;
 
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import com.y0ga.Networking.Enums.*;
 import com.y0ga.Networking.Exceptions.*;
 import com.y0ga.Networking.Utils.BufferUtility;
@@ -9,14 +8,18 @@ import com.y0ga.Networking.Utils.StreamUtility;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.*;
+
 import java.net.HttpURLConnection;
 import java.net.URL;
+
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+
 import java.util.HashMap;
+import java.util.concurrent.Executors;
+
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 /**
@@ -65,8 +68,8 @@ public class WebClient {
 
     //region SETTERS PROPERTIES
 
-    private BandwidthLimitation     DownloadBandwidthLimit  = BandwidthLimitation.Unlimited;
-    private BandwidthLimitation     UploadBandwidthLimit    = BandwidthLimitation.Unlimited;
+    private BandwidthLimitation     DownloadBandwidthLimit  = BandwidthLimitation.UNLIMITED;
+    private BandwidthLimitation     UploadBandwidthLimit    = BandwidthLimitation.UNLIMITED;
 
     private String                  CurrentUserAgentString  = "Java WebClient";
     private int                     BufferSize              = 1024 * 4;
@@ -80,12 +83,15 @@ public class WebClient {
 
     /**
      * Defines the maximum bytes per second limit for download operations. Default is unlimited.
-     * @throws NullBandwidthException
+     * @throws IllegalBandwidthException
      */
-    public void setDownloadBandwidthLimit(BandwidthLimitation downloadLimit) throws NullBandwidthException {
+    public void setDownloadBandwidthLimit(BandwidthLimitation downloadLimit) throws IllegalBandwidthException {
 
-        if (downloadLimit == null || downloadLimit.getMaximumBytesSecond() < 1)
-            throw new NullBandwidthException("downloadLimit is null or it's byte rate is negative");
+        if (downloadLimit == null)
+            this.DownloadBandwidthLimit = BandwidthLimitation.UNLIMITED;
+
+        if (downloadLimit.getMaximumBytesSecond() < 1)
+            throw new IllegalBandwidthException("The specified byte rate is negative");
 
         this.DownloadBandwidthLimit = downloadLimit;
 
@@ -93,12 +99,15 @@ public class WebClient {
 
     /**
      * Defines the maximum bytes per second limit for upload operations. Default is unlimited.
-     * @throws NullBandwidthException
+     * @throws IllegalBandwidthException
      */
-    public void setUploadBandwidthLimit(BandwidthLimitation uploadLimit) throws NullBandwidthException {
+    public void setUploadBandwidthLimit(BandwidthLimitation uploadLimit) throws IllegalBandwidthException {
 
-        if (uploadLimit == null || uploadLimit.getMaximumBytesSecond() < 1)
-            throw new NullBandwidthException("uploadLimit is null or it's byte rate is negative");
+        if (uploadLimit == null)
+            this.DownloadBandwidthLimit = BandwidthLimitation.UNLIMITED;
+
+        if (uploadLimit.getMaximumBytesSecond() < 1)
+            throw new IllegalBandwidthException("The specified byte rate is negative");
 
         this.UploadBandwidthLimit = uploadLimit;
 

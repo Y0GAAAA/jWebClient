@@ -2,10 +2,9 @@ package com.y0ga.Networking;
 
 public enum SizeUnit {
 
-    KiloByte (10),
-    MegaByte (20),
-    GigaByte (30),
-    TeraByte (40),
+    KiloByte(10),
+    MegaByte(20),
+    GigaByte(30),
     ;
 
     private final double Power;
@@ -19,7 +18,7 @@ public enum SizeUnit {
 
     long getBytesCount() {
 
-        return (long) (Math.pow(PowerBase, this.Power));
+        return (long) Math.pow(PowerBase, this.Power);
 
     }
 

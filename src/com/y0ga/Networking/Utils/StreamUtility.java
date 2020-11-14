@@ -20,9 +20,7 @@ public class StreamUtility {
         long BufferCopyStartTime    = 0;
         long BufferCopyEndTime      = 0;
 
-        long OperationTime          = 0;
-
-        long ToSleep                = 0;
+        int ToSleep                 = 0;
 
         int ReadOneSecond           = 0;
 
@@ -76,13 +74,11 @@ public class StreamUtility {
 
             BufferCopyEndTime = TimeUtility.get_ms();
 
-            OperationTime = (BufferCopyEndTime - BufferCopyStartTime);
-
-            ToSleep = TimeUtility.SECOND - OperationTime;
+            ToSleep = (int) (TimeUtility.SECOND - (BufferCopyEndTime - BufferCopyStartTime));
 
             if ((ToSleep > 0) && (ToSleep <= TimeUtility.SECOND) && !IsEOS) {
 
-                try {Thread.sleep(ToSleep);}
+                try {TimeUtility.SleepAccurate(ToSleep);}
                 catch(InterruptedException ex){return;}
 
             }

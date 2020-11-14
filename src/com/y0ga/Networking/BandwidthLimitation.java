@@ -1,5 +1,8 @@
 package com.y0ga.Networking;
 
+/**
+ * Represents a maximum speed in units per second.
+ */
 public class BandwidthLimitation {
 
     private long MaximumBytesSecond = 0;
@@ -10,13 +13,16 @@ public class BandwidthLimitation {
 
     }
 
-    public static final BandwidthLimitation Unlimited = new BandwidthLimitation(SizeUnit.TeraByte, Short.MAX_VALUE);
+    public static final BandwidthLimitation UNLIMITED = new BandwidthLimitation(SizeUnit.GigaByte, Short.MAX_VALUE);
 
+    /**
+     * Creates a new bandwidth limitation from the specified count of size unit.
+     */
     public BandwidthLimitation(SizeUnit unit, int count) {
 
         if (count == 0) {
 
-            this.MaximumBytesSecond = BandwidthLimitation.Unlimited.MaximumBytesSecond;
+            this.MaximumBytesSecond = BandwidthLimitation.UNLIMITED.MaximumBytesSecond;
 
         } else {
 
@@ -26,29 +32,30 @@ public class BandwidthLimitation {
 
     }
 
+    /**
+     * Creates a new bandwidth limitation from a maximum bytes per second count.
+     */
     public BandwidthLimitation(long maximumBytesSecond) {
 
         this.MaximumBytesSecond = maximumBytesSecond;
 
     }
 
-    public BandwidthLimitation add(BandwidthLimitation limit) {
+    /**
+     * Adds two limitations and returns the result.
+     */
+    public BandwidthLimitation add(BandwidthLimitation other) {
 
-        BandwidthLimitation output = BandwidthLimitation.Unlimited;
-
-        output.MaximumBytesSecond = this.MaximumBytesSecond += limit.MaximumBytesSecond;
-
-        return output;
+        return new BandwidthLimitation(this.MaximumBytesSecond + other.MaximumBytesSecond);
 
     }
 
-    public BandwidthLimitation substract(BandwidthLimitation limit) {
+    /**
+     * Subtracts two limitations and returns the result.
+     */
+    public BandwidthLimitation substract(BandwidthLimitation other) {
 
-        BandwidthLimitation output = BandwidthLimitation.Unlimited;
-
-        output.MaximumBytesSecond = this.MaximumBytesSecond -= limit.MaximumBytesSecond;
-
-        return output;
+        return new BandwidthLimitation(this.MaximumBytesSecond - other.MaximumBytesSecond);
 
     }
 
