@@ -1,9 +1,8 @@
 package com.y0ga.Networking;
 
-import com.y0ga.Networking.Enums.*;
-import com.y0ga.Networking.Exceptions.*;
-import com.y0ga.Networking.Utils.BufferUtility;
-import com.y0ga.Networking.Utils.StreamUtility;
+import com.y0ga.Networking.Exceptions.FileNotEradicableException;
+import com.y0ga.Networking.Exceptions.IllegalBandwidthException;
+import com.y0ga.Networking.Exceptions.InvalidBufferSizeException;
 
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
@@ -34,9 +33,7 @@ public class WebClient {
 
     private HttpURLConnection getConnection(URL url, HttpMethod method, RequestSpecification specification) throws IOException {
 
-        HttpURLConnection remoteHostConnection = null;
-
-        remoteHostConnection = (HttpURLConnection) url.openConnection();
+        HttpURLConnection remoteHostConnection = (HttpURLConnection) url.openConnection();
 
         remoteHostConnection.setRequestMethod(method.getMethodString());
 
@@ -166,7 +163,7 @@ public class WebClient {
     //region GETTERS
 
     /**
-     * @return A mutable HashMap containing the "additional" headers that will be sent for every request.
+     * @return A HashMap containing the "additional" headers that will be sent for every request.
      */
     public HashMap<String, String> Headers() {
 

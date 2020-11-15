@@ -8,16 +8,13 @@ import org.junit.Test;
 
 import java.util.concurrent.Callable;
 
-import static com.y0ga.Networking.Utils.TimeUtility.SleepAccurate;
-import static com.y0ga.Networking.Utils.TimeUtility.get_ms;
-
 public class SpeedLimitTests {
 
     private WebClient client = new WebClient();
 
     private int GetExecutionTime(Callable r) {
 
-        long start = get_ms();
+        long start = System.currentTimeMillis();
 
         try {
 
@@ -25,7 +22,7 @@ public class SpeedLimitTests {
 
         } catch (Exception ignored) {}
 
-        long end = get_ms();
+        long end = System.currentTimeMillis();
 
         return (int)(end - start);
 
@@ -68,30 +65,6 @@ public class SpeedLimitTests {
         if (elapsed < 1000 * 18) { //if it took less than ~20 (18 because it can "overshoot") seconds at the rate of 50kb/s for 1Mb
             assert(false); //Shit happened
         }
-
-    }
-
-    @Test
-    public void testSleepPrecision() throws Exception {
-
-        final int iterations = 100;
-        final int sleep = 50;
-
-        long stackedResults = 0;
-
-        for (int i = 0; i < iterations; i++) {
-
-            long start = get_ms();
-
-            SleepAccurate(sleep);
-
-            stackedResults += (int) (get_ms() - start);
-
-        }
-
-        int medianDelay = (int) stackedResults / iterations;
-
-        assert(medianDelay == sleep);
 
     }
 

@@ -1,6 +1,5 @@
 package tests;
 
-import com.y0ga.Networking.ConcurrentTaskCounter;
 import com.y0ga.Networking.WebClient;
 import org.junit.Assert;
 import org.junit.Test;

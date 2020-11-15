@@ -1,6 +1,6 @@
-package com.y0ga.Networking.Utils;
+package com.y0ga.Networking;
 
-public class TimeUtility {
+class TimeUtility {
 
     static final int SECOND = 1000;
     private static final int SLEEPING_IMPRECISION_MS = 15;

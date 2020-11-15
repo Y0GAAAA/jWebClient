@@ -1,6 +1,6 @@
-package com.y0ga.Networking.Enums;
+package com.y0ga.Networking;
 
-public enum HttpMethod {
+enum HttpMethod {
 
     GET("GET", false),
     POST("POST", true),

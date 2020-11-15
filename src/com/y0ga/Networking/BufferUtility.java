@@ -1,6 +1,6 @@
-package com.y0ga.Networking.Utils;
+package com.y0ga.Networking;
 
-public class BufferUtility {
+class BufferUtility {
 
     public static boolean IsValidBufferSize(int bufferSize) {
 

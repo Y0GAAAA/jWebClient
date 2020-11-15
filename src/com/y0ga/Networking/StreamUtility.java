@@ -1,13 +1,10 @@
-package com.y0ga.Networking.Utils;
-
-import com.y0ga.Networking.LimitationMode;
-import com.y0ga.Networking.ConcurrentTaskCounter;
+package com.y0ga.Networking;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-public class StreamUtility {
+class StreamUtility {
 
     private static class Constants {
 

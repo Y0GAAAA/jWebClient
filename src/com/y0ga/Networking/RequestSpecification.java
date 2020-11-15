@@ -1,8 +1,8 @@
-package com.y0ga.Networking.Enums;
+package com.y0ga.Networking;
 
 import java.net.HttpURLConnection;
 
-public enum RequestSpecification {
+enum RequestSpecification {
 
     PostBytes("application/octet-stream", "*/*"),
     PostString("text/plain", "text/*"),
