@@ -1,8 +1,6 @@
 package com.y0ga.Networking;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 
 class StreamUtility {
 
@@ -12,7 +10,7 @@ class StreamUtility {
 
     }
 
-    public static void copyStream(long maximumBytesPerSecond, int bufferSize, ConcurrentTaskCounter taskCounter, LimitationMode limitationMode, InputStream input, OutputStream output) throws IOException {
+    public static void copyStream(long maximumBytesPerSecond, int bufferSize, ConcurrentTaskCounter taskCounter, LimitationMode limitationMode, HttpIOStreamTunnel tunnel) throws IOException {
 
         long BufferCopyStartTime    = 0;
         long BufferCopyEndTime      = 0;
@@ -49,23 +47,19 @@ class StreamUtility {
 
                 byte[] readBuffer = new byte[bufferSize];
 
-                try {
+                int justRead = tunnel.getInput().read(readBuffer, 0, readBuffer.length);
 
-                    int justRead = input.read(readBuffer, 0, readBuffer.length);
+                if (justRead == Constants.END_OF_STREAM) {
 
-                    if (justRead == Constants.END_OF_STREAM) {
+                    IsEOS = true;
 
-                        IsEOS = true;
+                    break;
 
-                        break;
+                }
 
-                    }
+                ReadOneSecond += justRead;
 
-                    ReadOneSecond += justRead;
-
-                    output.write(readBuffer, 0, justRead);
-
-                } catch (IOException ex) { closeStreamTunnel(input, output); throw ex; }
+                tunnel.getOutput().write(readBuffer, 0, justRead);
 
             }
 
@@ -81,22 +75,6 @@ class StreamUtility {
             }
 
         } while (!IsEOS);
-
-    }
-
-    public static void closeStreamTunnel(InputStream iStream, OutputStream oStream) {
-
-        try {
-
-            iStream.close();
-
-        } catch (IOException ignored){}
-
-        try {
-
-            oStream.close();
-
-        } catch (IOException ignored){}
 
     }
 

@@ -11,7 +11,7 @@ public class ConcurrencyTests {
     @Test
     public void testIsBusyRaceCondition() throws Exception {
 
-        Future<byte[]> f1 = Shared.client.downloadDataAsync(Shared.DUMMY_FILE_URL);
+        Future<byte[]> f1 = Shared.client.downloadDataAsync(Shared.SMALL_FILE_URL);
 
         boolean futureRunning = !f1.isDone();
         boolean webClientBusy = Shared.client.isBusy();
@@ -25,11 +25,32 @@ public class ConcurrencyTests {
 
         WebClient client = new WebClient();
 
-        client.downloadDataAsync(Shared.DUMMY_FILE_URL);
+        client.downloadDataAsync(Shared.SMALL_FILE_URL);
 
         WebClient secondClient = new WebClient();
 
         Assert.assertEquals(false, secondClient.isBusy());
+
+    }
+
+    @Test
+    public void testTaskCountIsAccurate() throws Exception {
+
+        WebClient client = new WebClient();
+
+        assert(client.getRunningTaskCount() == 0);
+
+        client.downloadDataAsync(Shared.HUGE_FILE_URL);
+
+        assert(client.getRunningTaskCount() == 1);
+
+        client.downloadDataAsync(Shared.HUGE_FILE_URL);
+
+        assert(client.getRunningTaskCount() == 2);
+
+        client.downloadData(Shared.SMALL_FILE_URL);
+
+        assert(client.getRunningTaskCount() == 2);
 
     }
 

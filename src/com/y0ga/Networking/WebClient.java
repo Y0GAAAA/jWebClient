@@ -55,6 +55,31 @@ public class WebClient {
         return remoteHostConnection;
 
     }
+    private HttpIOStreamTunnel getTunnel(URL url, HttpMethod method, RequestSpecification specification, InputStream input, OutputStream output) throws IOException {
+
+        HttpURLConnection connection = getConnection(url, method, specification);
+
+        HttpIOStreamTunnel tunnel = null;
+
+        switch (method) {
+
+            case GET:
+                tunnel = new HttpIOStreamTunnel(connection.getInputStream(), output);
+                break;
+
+            case POST:
+                tunnel = new HttpIOStreamTunnel(connection, input, connection.getOutputStream());
+                break;
+
+            default:
+                throw new IllegalStateException("Unreachable");
+
+        }
+
+        return tunnel;
+
+    }
+
     private <K> Future<K> getFuture(Callable<K> r) {
 
         return ThreadPool.submit(r);
@@ -145,6 +170,9 @@ public class WebClient {
      */
     public void setEncoding(Charset charset) {
 
+        if (charset == null)
+            return;
+
         this.Encoding = charset;
 
     }
@@ -153,6 +181,9 @@ public class WebClient {
      * Sets the bandwidth limitation mode.
      */
     public void setLimitationMode(LimitationMode mode) {
+
+        if (mode == null)
+            return;
 
         this.BandwidthLimitationMode = mode;
 
@@ -173,12 +204,19 @@ public class WebClient {
 
     /**
      * @return A boolean that indicates if the current WebClient instance is working on any kind of task.
+     * @see #getRunningTaskCount()
      */
     public boolean isBusy() {
 
         return TaskCounter.getRunningTaskCount() > 0;
 
     }
+
+    /**
+     * @return The count of asynchronous and synchronous tasks running within the current WebClient instance.
+     * @see #isBusy()
+     */
+    public int getRunningTaskCount() { return TaskCounter.getRunningTaskCount(); }
 
     //endregion
 
@@ -199,7 +237,7 @@ public class WebClient {
      * Sends a GET request to the specified URL.
      * @return The read string decoded with the specified encoding.
      * @throws IOException
-     */
+     */ 
     public String downloadString(URL url) throws IOException {
 
         return internalDownloadString(url, RequestSpecification.DownloadString, SyncType.Synchronous);
@@ -307,15 +345,13 @@ public class WebClient {
 
         if (syncType == SyncType.Synchronous) { TaskCounter.incrementRunningTaskCount(); }
 
-        HttpURLConnection remoteConnection = getConnection(url, HttpMethod.GET, specification);
-
-        InputStream connectionInputStream = null;
-
-        connectionInputStream = remoteConnection.getInputStream();
-
         ByteArrayOutputStream finalOutput = new ByteArrayOutputStream();
 
-        StreamUtility.copyStream(DownloadBandwidthLimit.getMaximumBytesSecond(), this.BufferSize, this.TaskCounter, this.BandwidthLimitationMode,connectionInputStream, finalOutput);
+        try (HttpIOStreamTunnel tunnel = getTunnel(url, HttpMethod.GET, specification, null, finalOutput)) {
+
+            StreamUtility.copyStream(DownloadBandwidthLimit.getMaximumBytesSecond(), this.BufferSize, this.TaskCounter, this.BandwidthLimitationMode, tunnel);
+
+        }
 
         TaskCounter.decrementRunningTaskCount();
 
@@ -359,34 +395,33 @@ public class WebClient {
 
         if (syncType == SyncType.Synchronous) { TaskCounter.incrementRunningTaskCount(); }
 
-        HttpURLConnection remoteConnection = getConnection(url, HttpMethod.POST, specification);
-
-        remoteConnection.setFixedLengthStreamingMode(data.length);
-
-        InputStream connectionInputStream = null;
-        OutputStream connectionOutputStream = null;
-
-        connectionOutputStream = remoteConnection.getOutputStream();
-
         ByteArrayInputStream inputDataStream = new ByteArrayInputStream(data);
 
-        StreamUtility.copyStream(this.UploadBandwidthLimit.getMaximumBytesSecond(), this.BufferSize, this.TaskCounter, this.BandwidthLimitationMode, inputDataStream, connectionOutputStream);
+        HttpIOStreamTunnel requestTunnel = null;
+        HttpIOStreamTunnel responseTunnel = null;
 
-        StreamUtility.closeStreamTunnel(inputDataStream, connectionOutputStream);
+        ByteArrayOutputStream responseOutputStream;
 
-        connectionInputStream = remoteConnection.getInputStream();
+        try {
 
-        ByteArrayOutputStream responseOutputStream = new ByteArrayOutputStream();
+            requestTunnel = getTunnel(url, HttpMethod.POST, specification, inputDataStream, null);
 
-        StreamUtility.copyStream(this.DownloadBandwidthLimit.getMaximumBytesSecond(), this.BufferSize, this.TaskCounter, this.BandwidthLimitationMode, connectionInputStream, responseOutputStream);
+            StreamUtility.copyStream(this.UploadBandwidthLimit.getMaximumBytesSecond(), this.BufferSize, this.TaskCounter, this.BandwidthLimitationMode, requestTunnel);
 
-        byte[] responseData = responseOutputStream.toByteArray();
+            responseOutputStream = new ByteArrayOutputStream();
 
-        StreamUtility.closeStreamTunnel(connectionInputStream, responseOutputStream);
+            responseTunnel = new HttpIOStreamTunnel(requestTunnel.getUnderlyingInput(), responseOutputStream);
+
+            StreamUtility.copyStream(this.DownloadBandwidthLimit.getMaximumBytesSecond(), this.BufferSize, this.TaskCounter, this.BandwidthLimitationMode, responseTunnel);
+
+        } finally {
+            if (requestTunnel != null) { requestTunnel.close(); }
+            if (responseTunnel != null) { responseTunnel.close(); }
+        }
 
         TaskCounter.decrementRunningTaskCount();
 
-        return responseData;
+        return responseOutputStream.toByteArray();
 
     }
     private String internalUploadString(URL url, String string, RequestSpecification specification, SyncType syncType) throws IOException {

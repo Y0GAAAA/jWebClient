@@ -33,9 +33,7 @@ public class SpeedLimitTests {
 
         client.setDownloadBandwidthLimit(new BandwidthLimitation(SizeUnit.KiloByte, 100));
 
-        int elapsed = GetExecutionTime(() -> client.downloadData(Shared.DUMMY_FILE_URL));
-
-        System.out.println("Elapsed : " + elapsed + " ms");
+        int elapsed = GetExecutionTime(() -> client.downloadData(Shared.SMALL_FILE_URL));
 
         if (elapsed < 1000 * 10) { //if it took less than 10 seconds at the rate of 100kb/s for 1Mb
             assert(false); //Shit happened
@@ -52,8 +50,8 @@ public class SpeedLimitTests {
 
         int elapsed = GetExecutionTime(() -> {
 
-            client.downloadDataAsync(Shared.DUMMY_FILE_URL);
-            client.downloadDataAsync(Shared.DUMMY_FILE_URL);
+            client.downloadDataAsync(Shared.SMALL_FILE_URL);
+            client.downloadDataAsync(Shared.SMALL_FILE_URL);
 
             while (client.isBusy())
                 Thread.sleep(10);
@@ -63,7 +61,7 @@ public class SpeedLimitTests {
         });
 
         if (elapsed < 1000 * 18) { //if it took less than ~20 (18 because it can "overshoot") seconds at the rate of 50kb/s for 1Mb
-            assert(false); //Shit happened
+            assert(false);
         }
 
     }
