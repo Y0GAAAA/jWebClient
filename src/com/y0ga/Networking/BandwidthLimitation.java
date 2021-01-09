@@ -18,7 +18,7 @@ public class BandwidthLimitation {
     /**
      * Creates a new bandwidth limitation from the specified count of size unit.
      */
-    public BandwidthLimitation(SizeUnit unit, int count) {
+    public BandwidthLimitation(SizeUnit unit, short count) {
 
         if (count == 0) {
 

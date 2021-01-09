@@ -31,7 +31,7 @@ public class SpeedLimitTests {
     @Test
     public void testSimpleLimit() throws Exception {
 
-        client.setDownloadBandwidthLimit(new BandwidthLimitation(SizeUnit.KiloByte, 100));
+        client.setDownloadBandwidthLimit(new BandwidthLimitation(SizeUnit.KiloByte, (short) 100));
 
         int elapsed = GetExecutionTime(() -> client.downloadData(Shared.SMALL_FILE_URL));
 
@@ -46,7 +46,7 @@ public class SpeedLimitTests {
 
         client.setLimitationMode(LimitationMode.PerTask);
 
-        client.setDownloadBandwidthLimit(new BandwidthLimitation(SizeUnit.KiloByte, 50));
+        client.setDownloadBandwidthLimit(new BandwidthLimitation(SizeUnit.KiloByte, (short) 50));
 
         int elapsed = GetExecutionTime(() -> {
 
