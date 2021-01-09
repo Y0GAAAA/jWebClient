@@ -1,6 +1,6 @@
 package com.y0ga.Networking;
 
-public class StreamCopySettings {
+class StreamCopySettings {
 
     long bps; //max bytes per second
     int bufferSize; //copy buffer size
