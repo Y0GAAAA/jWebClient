@@ -12,7 +12,10 @@ public class BandwidthLimitation {
         return this.MaximumBytesSecond;
 
     }
-
+    
+    /**
+     * Constant equivalent to no bandwidth limitation.
+     */
     public static final BandwidthLimitation UNLIMITED = new BandwidthLimitation(SizeUnit.GigaByte, Short.MAX_VALUE);
 
     /**
