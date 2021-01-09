@@ -13,8 +13,8 @@ enum RequestSpecification {
     DownloadFile("", "*/*"),
     ;
 
-    private String ContentType = "";
-    private String Accept = "";
+    private String ContentType;
+    private String Accept;
 
     public String getContentType() {
 

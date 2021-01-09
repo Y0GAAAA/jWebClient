@@ -445,7 +445,8 @@ public class WebClient {
     //region PRIVATE ENUMS
     
     private enum OperationType { Download, Upload }
-
+    private enum SyncType { Synchronous, Asynchronous }
+    
     //endregion
     
 }
