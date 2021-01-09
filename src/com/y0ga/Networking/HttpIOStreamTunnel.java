@@ -6,7 +6,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 
-public class HttpIOStreamTunnel implements Closeable {
+class HttpIOStreamTunnel {
 
     private InputStream input;
     private OutputStream output;
@@ -37,6 +37,76 @@ public class HttpIOStreamTunnel implements Closeable {
             return underlyingConnection.getOutputStream();
     }
 
+    public HttpIOStreamTunnel copy(StreamCopySettings settings) throws IOException {
+
+        long BufferCopyStartTime    = 0;
+        long BufferCopyEndTime      = 0;
+
+        int ToSleep                 = 0;
+
+        int ReadOneSecond           = 0;
+
+        long MaximumByteRate        = 0;
+
+        boolean IsEOS               = false;
+
+        do {
+
+            ReadOneSecond = 0;
+
+            BufferCopyStartTime = TimeUtility.get_ms();
+
+            MaximumByteRate = settings.bps;
+
+            if (settings.limitationMode == LimitationMode.Global) {
+
+                int taskCount = settings.taskCounter.getRunningTaskCount();
+
+                if (taskCount > 0) {
+
+                    MaximumByteRate /= taskCount;
+
+                }
+
+            }
+
+            while (ReadOneSecond < MaximumByteRate) {
+
+                byte[] readBuffer = new byte[settings.bufferSize];
+
+                int justRead = this.getInput().read(readBuffer, 0, readBuffer.length);
+
+                if (justRead == StreamUtility.Constants.END_OF_STREAM) {
+
+                    IsEOS = true;
+
+                    break;
+
+                }
+
+                ReadOneSecond += justRead;
+
+                this.getOutput().write(readBuffer, 0, justRead);
+
+            }
+
+            BufferCopyEndTime = TimeUtility.get_ms();
+
+            ToSleep = (int) (TimeUtility.SECOND - (BufferCopyEndTime - BufferCopyStartTime));
+
+            if ((ToSleep > 0) && (ToSleep <= TimeUtility.SECOND) && !IsEOS) {
+
+                try {TimeUtility.SleepAccurate(ToSleep);}
+                catch(InterruptedException ex){break;}
+
+            }
+
+        } while (!IsEOS);
+
+        return this;
+        
+    }
+
     public InputStream getInput() {
             return input;
         }
@@ -51,20 +121,30 @@ public class HttpIOStreamTunnel implements Closeable {
         this.output = output;
     }
 
-    @Override
-    public void close() {
+    public void close(boolean underlying) {
 
         try {
 
             this.input.close();
 
         } catch (IOException ignored){}
-
         try {
 
             this.output.close();
 
         } catch (IOException ignored){}
+
+        if (underlying) {
+
+            try {
+                getUnderlyingInput().close();
+            } catch (IOException ignored) {}
+
+            try {
+                getUnderlyingOutput().close();
+            } catch (IOException ignored) {}
+
+        }
 
     }
 

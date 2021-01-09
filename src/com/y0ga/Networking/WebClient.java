@@ -44,9 +44,9 @@ public class WebClient {
 
         specification.SetHeaders(remoteHostConnection);
 
-        for (String headerKey : this.internalHeaders.keySet()) {
+        for (String headerKey : this.InternalHeaders.keySet()) {
 
-            String headerValue = this.internalHeaders.get(headerKey);
+            String headerValue = this.InternalHeaders.get(headerKey);
 
             remoteHostConnection.setRequestProperty(headerKey, headerValue);
 
@@ -64,7 +64,7 @@ public class WebClient {
         switch (method) {
 
             case GET:
-                tunnel = new HttpIOStreamTunnel(connection.getInputStream(), output);
+                tunnel = new HttpIOStreamTunnel(connection, connection.getInputStream(), output);
                 break;
 
             case POST:
@@ -72,11 +72,18 @@ public class WebClient {
                 break;
 
             default:
-                throw new IllegalStateException("Unreachable");
+                throw new IllegalStateException("No http method other than GET or POST is currently supported.");
 
         }
 
         return tunnel;
+
+    }
+    private StreamCopySettings getCopySettings(OperationType operationType) {
+
+        long maxBytes = (operationType == OperationType.Download) ? DownloadBandwidthLimit.getMaximumBytesSecond() : UploadBandwidthLimit.getMaximumBytesSecond();
+
+        return new StreamCopySettings(maxBytes, this.BufferSize, this.TaskCounter, this.BandwidthLimitationMode);
 
     }
 
@@ -88,7 +95,7 @@ public class WebClient {
 
     //endregion
 
-    //region SETTERS PROPERTIES
+    //region PROPERTIES
 
     private BandwidthLimitation     DownloadBandwidthLimit  = BandwidthLimitation.UNLIMITED;
     private BandwidthLimitation     UploadBandwidthLimit    = BandwidthLimitation.UNLIMITED;
@@ -96,8 +103,9 @@ public class WebClient {
     private String                  CurrentUserAgentString  = "Java WebClient";
     private int                     BufferSize              = 1024 * 4;
     private Charset                 Encoding                = StandardCharsets.UTF_8;
-    private HashMap<String, String> internalHeaders         = new HashMap<>();
     private LimitationMode          BandwidthLimitationMode = LimitationMode.Global;
+
+    private final HashMap<String, String> InternalHeaders = new HashMap<>();
 
     //endregion
 
@@ -157,7 +165,7 @@ public class WebClient {
 
             CurrentUserAgentString = "";
 
-        }else {
+        } else {
 
             CurrentUserAgentString = userAgent;
 
@@ -198,7 +206,7 @@ public class WebClient {
      */
     public HashMap<String, String> Headers() {
 
-        return internalHeaders;
+        return InternalHeaders;
 
     }
 
@@ -347,11 +355,8 @@ public class WebClient {
 
         ByteArrayOutputStream finalOutput = new ByteArrayOutputStream();
 
-        try (HttpIOStreamTunnel tunnel = getTunnel(url, HttpMethod.GET, specification, null, finalOutput)) {
-
-            StreamUtility.copyStream(DownloadBandwidthLimit.getMaximumBytesSecond(), this.BufferSize, this.TaskCounter, this.BandwidthLimitationMode, tunnel);
-
-        }
+        getTunnel(url, HttpMethod.GET, specification, null, finalOutput).copy(getCopySettings(OperationType.Download))
+                                                                              .close(true);
 
         TaskCounter.decrementRunningTaskCount();
 
@@ -361,8 +366,6 @@ public class WebClient {
     private String internalDownloadString(URL url, RequestSpecification specification, SyncType syncType) throws IOException {
 
         byte[] data = internalDownloadData(url, specification, syncType);
-
-        if (data.length == 0) {return "";}
 
         return new String(data, this.Encoding);
 
@@ -397,26 +400,23 @@ public class WebClient {
 
         ByteArrayInputStream inputDataStream = new ByteArrayInputStream(data);
 
-        HttpIOStreamTunnel requestTunnel = null;
-        HttpIOStreamTunnel responseTunnel = null;
-
         ByteArrayOutputStream responseOutputStream;
 
+        HttpIOStreamTunnel reqTunnel = null;
+
         try {
-
-            requestTunnel = getTunnel(url, HttpMethod.POST, specification, inputDataStream, null);
-
-            StreamUtility.copyStream(this.UploadBandwidthLimit.getMaximumBytesSecond(), this.BufferSize, this.TaskCounter, this.BandwidthLimitationMode, requestTunnel);
+            
+            reqTunnel = getTunnel(url, HttpMethod.POST, specification, inputDataStream, null)
+                                 .copy(getCopySettings(OperationType.Upload));
 
             responseOutputStream = new ByteArrayOutputStream();
 
-            responseTunnel = new HttpIOStreamTunnel(requestTunnel.getUnderlyingInput(), responseOutputStream);
-
-            StreamUtility.copyStream(this.DownloadBandwidthLimit.getMaximumBytesSecond(), this.BufferSize, this.TaskCounter, this.BandwidthLimitationMode, responseTunnel);
+            new HttpIOStreamTunnel(reqTunnel.getUnderlyingInput(), responseOutputStream)
+                                  .copy(getCopySettings(OperationType.Download))
+                                  .close(false);
 
         } finally {
-            if (requestTunnel != null) { requestTunnel.close(); }
-            if (responseTunnel != null) { responseTunnel.close(); }
+            if (reqTunnel != null) { reqTunnel.close(true); }
         }
 
         TaskCounter.decrementRunningTaskCount();
@@ -442,4 +442,10 @@ public class WebClient {
 
     //endregion
 
+    //region PRIVATE ENUMS
+    
+    private enum OperationType { Download, Upload }
+
+    //endregion
+    
 }

@@ -47,7 +47,6 @@ public class AsyncAbortionTests {
 
     }
 
-
     private static class ErrorServer {
 
         HttpServer server;
