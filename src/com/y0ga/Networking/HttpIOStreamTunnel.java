@@ -121,28 +121,20 @@ class HttpIOStreamTunnel {
         this.output = output;
     }
 
-    public void close(boolean underlying) {
 
-        try {
+    public void close(boolean main, boolean underlying) {
 
-            this.input.close();
-
-        } catch (IOException ignored){}
-        try {
-
-            this.output.close();
-
-        } catch (IOException ignored){}
-
+        if (main) {
+    
+            try { this.input.close(); } catch (Exception ignored) {}
+            try { this.output.close(); } catch (Exception ignored) {}
+    
+        }
+        
         if (underlying) {
 
-            try {
-                getUnderlyingInput().close();
-            } catch (IOException ignored) {}
-
-            try {
-                getUnderlyingOutput().close();
-            } catch (IOException ignored) {}
+            try { getUnderlyingInput().close(); } catch (Exception ignored) {}
+            try { getUnderlyingOutput().close(); } catch (Exception ignored) {}
 
         }
 

@@ -30,7 +30,7 @@ public class WebClient {
 
     private final ExecutorService ThreadPool = Executors.newCachedThreadPool();
     private final ConcurrentTaskCounter TaskCounter = new ConcurrentTaskCounter();
-
+    
     private HttpURLConnection getConnection(URL url, HttpMethod method, RequestSpecification specification) throws IOException {
 
         HttpURLConnection remoteHostConnection = (HttpURLConnection) url.openConnection();
@@ -55,29 +55,29 @@ public class WebClient {
         return remoteHostConnection;
 
     }
-    private HttpIOStreamTunnel getTunnel(URL url, HttpMethod method, RequestSpecification specification, InputStream input, OutputStream output) throws IOException {
-
+    private HttpIOStreamTunnel createTunnel(URL url, HttpMethod method, RequestSpecification specification, InputStream input, OutputStream output) throws IOException {
+        
         HttpURLConnection connection = getConnection(url, method, specification);
-
+        
         HttpIOStreamTunnel tunnel = null;
-
+        
         switch (method) {
-
+            
             case GET:
                 tunnel = new HttpIOStreamTunnel(connection, connection.getInputStream(), output);
                 break;
-
+            
             case POST:
                 tunnel = new HttpIOStreamTunnel(connection, input, connection.getOutputStream());
                 break;
-
+            
             default:
                 throw new IllegalStateException("No http method other than GET or POST is currently supported.");
-
+            
         }
-
+        
         return tunnel;
-
+        
     }
     private StreamCopySettings getCopySettings(OperationType operationType) {
 
@@ -86,7 +86,7 @@ public class WebClient {
         return new StreamCopySettings(maxBytes, this.BufferSize, this.TaskCounter, this.BandwidthLimitationMode);
 
     }
-
+    
     private <K> Future<K> getFuture(Callable<K> r) {
 
         return ThreadPool.submit(r);
@@ -237,10 +237,10 @@ public class WebClient {
      */
     public byte[] downloadData(URL url) throws IOException {
 
-        return internalDownloadData(url, RequestSpecification.DownloadBytes, SyncType.Synchronous);
+        return internalDownloadData(url, RequestSpecification.DownloadBytes, SyncType.Synchronous).toByteArray();
 
     }
-
+    
     /**
      * Sends a GET request to the specified URL.
      * @return The read string decoded with the specified encoding.
@@ -271,7 +271,7 @@ public class WebClient {
 
         TaskCounter.incrementRunningTaskCount();
 
-        return getFuture(() -> internalDownloadData(url, RequestSpecification.DownloadBytes, SyncType.Asynchronous));
+        return getFuture(() -> internalDownloadData(url, RequestSpecification.DownloadBytes, SyncType.Asynchronous).toByteArray());
 
     }
 
@@ -349,90 +349,119 @@ public class WebClient {
 
     //region INTERNAL FUNCTIONS
 
-    private byte[] internalDownloadData(URL url, RequestSpecification specification, SyncType syncType) throws IOException, IOException {
+    private ByteArrayOutputStream internalDownloadData(URL url, RequestSpecification specification, SyncType syncType) throws IOException {
 
         if (syncType == SyncType.Synchronous) { TaskCounter.incrementRunningTaskCount(); }
-
-        ByteArrayOutputStream finalOutput = new ByteArrayOutputStream();
-
-        getTunnel(url, HttpMethod.GET, specification, null, finalOutput).copy(getCopySettings(OperationType.Download))
-                                                                              .close(true);
-
-        TaskCounter.decrementRunningTaskCount();
-
-        return finalOutput.toByteArray();
-
+    
+        ByteArrayOutputStream finalOutput;
+        
+        try {
+    
+            finalOutput = new ByteArrayOutputStream();
+    
+            createTunnel(url, HttpMethod.GET, specification, null, finalOutput).copy(getCopySettings(OperationType.Download))
+                        .close(false, true);
+    
+            return finalOutput;
+    
+        } catch (IOException ex) {throw ex;}
+        finally {
+            TaskCounter.decrementRunningTaskCount();
+        }
+        
     }
     private String internalDownloadString(URL url, RequestSpecification specification, SyncType syncType) throws IOException {
-
-        byte[] data = internalDownloadData(url, specification, syncType);
-
-        return new String(data, this.Encoding);
+    
+        if (syncType == SyncType.Synchronous) { TaskCounter.incrementRunningTaskCount(); }
+    
+        ByteArrayOutputStream stringBytes = new ByteArrayOutputStream();
+        
+        try {
+        
+            createTunnel(url, HttpMethod.GET, specification, null, stringBytes)
+                    .copy(getCopySettings(OperationType.Download))
+                    .close(true, true);
+    
+            return stringBytes.toString(this.Encoding.name());
+    
+        } catch (Exception ex) {throw ex;}
+        finally {
+            TaskCounter.decrementRunningTaskCount();
+        }
 
     }
-    private boolean internalDownloadFile(URL fileUrl, File localFile, RequestSpecification specification, SyncType syncType) throws FileNotEradicableException, IOException {
-
-        byte[] fileData = internalDownloadData(fileUrl, specification, syncType);
-
-        if (localFile.exists()) {
-
-            if (!localFile.delete()) {
-
-                FileNotEradicableException.ThrowFromFile(localFile);
-
-            }
-
+    private boolean internalDownloadFile(URL fileUrl, File localFile, RequestSpecification specification, SyncType syncType) throws IOException {
+    
+        if (syncType == SyncType.Synchronous) { TaskCounter.incrementRunningTaskCount(); }
+    
+        FileOutputStream fileOutputStream = new FileOutputStream(localFile);
+        
+        try {
+    
+            createTunnel(fileUrl, HttpMethod.GET, specification, null, fileOutputStream)
+                    .copy(getCopySettings(OperationType.Download))
+                    .close(true, true);
+    
+            return true;
+    
+        } catch (Exception ex) {throw ex;}
+        finally {
+            TaskCounter.decrementRunningTaskCount();
         }
-
-        try (FileOutputStream fileOutput = new FileOutputStream(localFile)) {
-
-            fileOutput.write(fileData);
-
-        }
-
-        return true;
-
+        
     }
 
     private byte[] internalUploadData(URL url, byte[] data, RequestSpecification specification, SyncType syncType) throws IOException {
 
         if (syncType == SyncType.Synchronous) { TaskCounter.incrementRunningTaskCount(); }
-
-        ByteArrayInputStream inputDataStream = new ByteArrayInputStream(data);
-
-        ByteArrayOutputStream responseOutputStream;
-
+        
         HttpIOStreamTunnel reqTunnel = null;
 
         try {
-            
-            reqTunnel = getTunnel(url, HttpMethod.POST, specification, inputDataStream, null)
+    
+            ByteArrayInputStream inputDataStream = new ByteArrayInputStream(data);
+    
+            reqTunnel = createTunnel(url, HttpMethod.POST, specification, inputDataStream, null)
                                  .copy(getCopySettings(OperationType.Upload));
-
-            responseOutputStream = new ByteArrayOutputStream();
+    
+            ByteArrayOutputStream responseOutputStream = new ByteArrayOutputStream();
 
             new HttpIOStreamTunnel(reqTunnel.getUnderlyingInput(), responseOutputStream)
                                   .copy(getCopySettings(OperationType.Download))
-                                  .close(false);
-
+                                  .close(true, true);
+    
+            return responseOutputStream.toByteArray();
+    
         } finally {
-            if (reqTunnel != null) { reqTunnel.close(true); }
+            TaskCounter.decrementRunningTaskCount();
         }
-
-        TaskCounter.decrementRunningTaskCount();
-
-        return responseOutputStream.toByteArray();
-
+        
     }
     private String internalUploadString(URL url, String string, RequestSpecification specification, SyncType syncType) throws IOException {
-
-        byte[] stringBytes = string.getBytes(this.Encoding);
-        byte[] response = internalUploadData(url, stringBytes, specification, syncType);
-
-        if (response.length == 0) {return "";}
-
-        return new String(response, this.Encoding);
-
+    
+        if (syncType == SyncType.Synchronous) { TaskCounter.incrementRunningTaskCount(); }
+    
+        HttpIOStreamTunnel reqTunnel = null;
+    
+        try {
+        
+            ByteArrayInputStream inputStringBytes = new ByteArrayInputStream(string.getBytes(this.Encoding));
+        
+            reqTunnel = createTunnel(url, HttpMethod.POST, specification, inputStringBytes, null)
+                                    .copy(getCopySettings(OperationType.Upload));
+        
+            ByteArrayOutputStream responseOutputStream = new ByteArrayOutputStream();
+        
+            new HttpIOStreamTunnel(reqTunnel.getUnderlyingInput(), responseOutputStream)
+                    .copy(getCopySettings(OperationType.Download))
+                    .close(true, true);
+        
+            return responseOutputStream.toString(this.Encoding.name());
+        
+        } finally {
+            TaskCounter.decrementRunningTaskCount();
+        }
+    
     }
     private void internalUploadFile(URL url, File file, RequestSpecification specification, SyncType syncType) {
 

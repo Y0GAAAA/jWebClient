@@ -8,6 +8,8 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.util.concurrent.Future;
 
+import static java.lang.System.*;
+
 public class DownloadTests {
 
     private static final URL EXAMPLE_WEBSITE = Shared.GetURLFromString("http://example.com/");
@@ -140,5 +142,5 @@ public class DownloadTests {
         Assert.assertArrayEquals(ExampleWebsiteHtmlBytes(), fileBytes);
 
     }
-
+    
 }
