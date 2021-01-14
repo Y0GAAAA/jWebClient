@@ -1,6 +1,5 @@
 package com.y0ga.Networking;
 
-import com.y0ga.Networking.Exceptions.FileNotEradicableException;
 import com.y0ga.Networking.Exceptions.IllegalBandwidthException;
 import com.y0ga.Networking.Exceptions.InvalidBufferSizeException;
 
@@ -254,10 +253,9 @@ public class WebClient {
 
     /**
      * Sends a GET request to the specified URL and saves the response bytes to a file.
-     * @throws FileNotEradicableException If the file already exists and can not be deleted.
      * @throws IOException
      */
-    public void downloadFile(URL url, File localFile) throws FileNotEradicableException, IOException {
+    public void downloadFile(URL url, File localFile) throws IOException {
 
         internalDownloadFile(url, localFile, RequestSpecification.DownloadFile, SyncType.Synchronous);
 
