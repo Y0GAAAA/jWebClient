@@ -4,6 +4,7 @@ import com.y0ga.Networking.WebClient;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.ByteArrayOutputStream;
 import java.util.concurrent.Future;
 
 public class ConcurrencyTests {
@@ -11,7 +12,7 @@ public class ConcurrencyTests {
     @Test
     public void testIsBusyRaceCondition() throws Exception {
 
-        Future<byte[]> f1 = Shared.client.downloadDataAsync(Shared.SMALL_FILE_URL);
+        Future<ByteArrayOutputStream> f1 = Shared.client.downloadDataAsync(Shared.SMALL_FILE_URL);
 
         boolean futureRunning = !f1.isDone();
         boolean webClientBusy = Shared.client.isBusy();

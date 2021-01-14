@@ -9,9 +9,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.URL;
 import java.util.concurrent.Future;
@@ -54,7 +52,7 @@ public class UploadTests {
 
         byte[] data = TESTING_STRING.getBytes();
 
-        byte[] echo = Shared.client.uploadData(ECHO_URL, data);
+        byte[] echo = Shared.client.uploadData(ECHO_URL, new ByteArrayInputStream(data)).toByteArray();
 
         Assert.assertArrayEquals(data, echo);
 
@@ -76,9 +74,9 @@ public class UploadTests {
 
         byte[] data = TESTING_STRING.getBytes();
 
-        Future<byte[]> dataFuture = Shared.client.uploadDataAsync(ECHO_URL, data);
+        Future<ByteArrayOutputStream> dataFuture = Shared.client.uploadDataAsync(ECHO_URL, new ByteArrayInputStream(data));
 
-        byte[] echo = dataFuture.get();
+        byte[] echo = dataFuture.get().toByteArray();
 
         Assert.assertArrayEquals(data, echo);
 

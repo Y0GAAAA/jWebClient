@@ -144,7 +144,7 @@ public class WebClient {
     }
 
     /**
-     * Defines the size in bytes of the buffer that is used to copy streams in both upload/download operations. Default size is 4096b bytes .
+     * Defines the size in bytes of the buffer that is used to copy streams in both upload/download operations. Default size is 4096 bytes .
      * @throws InvalidBufferSizeException If the bufferSize parameter is not a power of 2.
      */
     public void setBufferSize(int bufferSize) throws InvalidBufferSizeException {
@@ -235,9 +235,9 @@ public class WebClient {
      * @return The read bytes from the response content.
      * @throws IOException
      */
-    public byte[] downloadData(URL url) throws IOException {
+    public ByteArrayOutputStream downloadData(URL url) throws IOException {
 
-        return internalDownloadData(url, RequestSpecification.DownloadBytes, SyncType.Synchronous).toByteArray();
+        return internalDownloadData(url, RequestSpecification.DownloadBytes, SyncType.Synchronous);
 
     }
     
@@ -265,13 +265,13 @@ public class WebClient {
 
     /**
      * Sends a GET request to the specified URL.
-     * @return Future&lt;byte[]&gt; that will contain the response bytes when read.
+     * @return Future&lt;ByteArrayOutputStream&gt; that will contain the response bytes when read.
      */
-    public Future<byte[]> downloadDataAsync(URL url) {
+    public Future<ByteArrayOutputStream> downloadDataAsync(URL url) {
 
         TaskCounter.incrementRunningTaskCount();
 
-        return getFuture(() -> internalDownloadData(url, RequestSpecification.DownloadBytes, SyncType.Asynchronous).toByteArray());
+        return getFuture(() -> internalDownloadData(url, RequestSpecification.DownloadBytes, SyncType.Asynchronous));
 
     }
 
@@ -304,7 +304,7 @@ public class WebClient {
      * @return The response bytes.
      * @throws IOException
      */
-    public byte[] uploadData(URL url, byte[] data) throws IOException {
+    public ByteArrayOutputStream uploadData(URL url, ByteArrayInputStream data) throws IOException {
 
         return internalUploadData(url, data, RequestSpecification.PostBytes, SyncType.Synchronous);
 
@@ -323,9 +323,9 @@ public class WebClient {
 
     /**
      * Sends a POST request to the specified URL with the specified byte array as the request body.
-     * @return Future&lt;byte[]&gt; that will contain the response bytes when read.
+     * @return Future&lt;ByteArrayOutputStream&gt; that will contain the response bytes when read.
      */
-    public Future<byte[]> uploadDataAsync(URL url, byte[] data) {
+    public Future<ByteArrayOutputStream> uploadDataAsync(URL url, ByteArrayInputStream data) {
 
         TaskCounter.incrementRunningTaskCount();
 
@@ -359,7 +359,8 @@ public class WebClient {
     
             finalOutput = new ByteArrayOutputStream();
     
-            createTunnel(url, HttpMethod.GET, specification, null, finalOutput).copy(getCopySettings(OperationType.Download))
+            createTunnel(url, HttpMethod.GET, specification, null, finalOutput)
+                        .copy(getCopySettings(OperationType.Download))
                         .close(false, true);
     
             return finalOutput;
@@ -411,26 +412,24 @@ public class WebClient {
         
     }
 
-    private byte[] internalUploadData(URL url, byte[] data, RequestSpecification specification, SyncType syncType) throws IOException {
+    private ByteArrayOutputStream internalUploadData(URL url, ByteArrayInputStream data, RequestSpecification specification, SyncType syncType) throws IOException {
 
         if (syncType == SyncType.Synchronous) { TaskCounter.incrementRunningTaskCount(); }
         
         HttpIOStreamTunnel reqTunnel = null;
 
         try {
-    
-            ByteArrayInputStream inputDataStream = new ByteArrayInputStream(data);
-    
-            reqTunnel = createTunnel(url, HttpMethod.POST, specification, inputDataStream, null)
+            
+            reqTunnel = createTunnel(url, HttpMethod.POST, specification, data, null)
                                  .copy(getCopySettings(OperationType.Upload));
     
             ByteArrayOutputStream responseOutputStream = new ByteArrayOutputStream();
 
             new HttpIOStreamTunnel(reqTunnel.getUnderlyingInput(), responseOutputStream)
                                   .copy(getCopySettings(OperationType.Download))
-                                  .close(true, true);
+                                  .close(false, true);
     
-            return responseOutputStream.toByteArray();
+            return responseOutputStream;
     
         } finally {
             TaskCounter.decrementRunningTaskCount();

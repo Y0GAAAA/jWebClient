@@ -3,6 +3,7 @@ package tests;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.net.URL;
 import java.nio.file.Files;
@@ -80,9 +81,9 @@ public class DownloadTests {
     @Test
     public void downloadDataTest() throws Exception {
 
-        byte[] data = Shared.client.downloadData(EXAMPLE_WEBSITE);
+        ByteArrayOutputStream data = Shared.client.downloadData(EXAMPLE_WEBSITE);
 
-        Assert.assertArrayEquals(ExampleWebsiteHtmlBytes(), data);
+        Assert.assertArrayEquals(ExampleWebsiteHtmlBytes(), data.toByteArray());
 
     }
 
@@ -116,9 +117,9 @@ public class DownloadTests {
     @Test
     public void downloadDataAsyncTest() throws Exception {
 
-        Future<byte[]> futureData = Shared.client.downloadDataAsync(EXAMPLE_WEBSITE);
+        Future<ByteArrayOutputStream> futureData = Shared.client.downloadDataAsync(EXAMPLE_WEBSITE);
 
-        byte[] data = futureData.get();
+        byte[] data = futureData.get().toByteArray();
 
         Assert.assertArrayEquals(ExampleWebsiteHtmlBytes(), data);
 

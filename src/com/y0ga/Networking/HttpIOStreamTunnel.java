@@ -1,6 +1,5 @@
 package com.y0ga.Networking;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -69,11 +68,11 @@ class HttpIOStreamTunnel {
                 }
 
             }
-
+    
+            byte[] readBuffer = new byte[settings.bufferSize];
+            
             while (ReadOneSecond < MaximumByteRate) {
-
-                byte[] readBuffer = new byte[settings.bufferSize];
-
+                
                 int justRead = this.getInput().read(readBuffer, 0, readBuffer.length);
 
                 if (justRead == StreamUtility.Constants.END_OF_STREAM) {
@@ -120,7 +119,6 @@ class HttpIOStreamTunnel {
     public void setOutput(OutputStream output) {
         this.output = output;
     }
-
 
     public void close(boolean main, boolean underlying) {
 

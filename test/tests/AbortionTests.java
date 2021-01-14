@@ -3,19 +3,26 @@ package tests;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import java.net.URL;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-public class AsyncAbortionTests {
+public class AbortionTests {
 
     private static ErrorServer server = null;
 
+    private static final URL FORBIDDEN_URL      = Shared.GetURLFromString("http://127.0.0.1/forbidden");
+    private static final URL INTERRUPTED_URL    = Shared.GetURLFromString("http://127.0.0.1/interrupt");
+    
     @BeforeClass
     public static void startErrorServer() throws Exception {
 
@@ -31,22 +38,67 @@ public class AsyncAbortionTests {
         server.stop();
 
     }
-
+    
     @Test
     public void testAsyncForbiddenError() {
 
-        Future<String> futureString = Shared.client.downloadStringAsync(Shared.GetURLFromString("http://127.0.0.1/forbidden"));
+        Future<String> futureString = Shared.client.downloadStringAsync(FORBIDDEN_URL);
 
         try {
 
             futureString.get();
 
-        } catch (Exception e) {return;}
+        }
+        catch (ExecutionException ignored) {return;}
+        catch (InterruptedException ignored) {}
 
         assert(false);
 
     }
-
+    
+    @Test
+    public void testForbiddenError() {
+    
+        try {
+        
+            Shared.client.downloadData(FORBIDDEN_URL);
+        
+        } catch (IOException ignored) {return;}
+    
+        assert(false);
+        
+    }
+    
+    //@Test //for some reason can't detect unexpected stream closing yet...
+    public void testAsyncInterruptedError() {
+        
+        Future<String> futureString = Shared.client.downloadStringAsync(INTERRUPTED_URL);
+        
+        try {
+            
+            futureString.get();
+            
+        }
+        catch (Exception ignored) {return;}
+        
+        assert(false);
+        
+    }
+    
+    //@Test //for some reason can't detect unexpected stream closing yet...
+    public void testInterruptedError() {
+    
+        try {
+        
+            ByteArrayOutputStream x = Shared.client.downloadData(INTERRUPTED_URL);
+            
+        }
+        catch (IOException ignored) {return;}
+    
+        assert(false);
+    
+    }
+    
     private static class ErrorServer {
 
         HttpServer server;
@@ -57,6 +109,7 @@ public class AsyncAbortionTests {
 
             server.createContext("/forbidden", new ForbiddenHandler());
             server.createContext("/interrupt", new InterruptExchangeHandler());
+            
             server.start();
 
         }
