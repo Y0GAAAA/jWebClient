@@ -1,5 +1,7 @@
 package tests;
 
+import com.y0ga.Networking.Asynchronous.AsyncTask;
+import com.y0ga.Networking.WebClient;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -8,8 +10,6 @@ import java.io.File;
 import java.net.URL;
 import java.nio.file.Files;
 import java.util.concurrent.Future;
-
-import static java.lang.System.*;
 
 public class DownloadTests {
 
@@ -72,7 +72,7 @@ public class DownloadTests {
     @Test
     public void downloadStringTest() throws Exception {
 
-        String htmlContent = Shared.client.downloadString(EXAMPLE_WEBSITE);
+        String htmlContent = new WebClient().downloadString(EXAMPLE_WEBSITE);
 
         Assert.assertEquals(EXAMPLE_WEBSITE_HTML, htmlContent);
 
@@ -80,10 +80,12 @@ public class DownloadTests {
 
     @Test
     public void downloadDataTest() throws Exception {
-
-        ByteArrayOutputStream data = Shared.client.downloadData(EXAMPLE_WEBSITE);
-
-        Assert.assertArrayEquals(ExampleWebsiteHtmlBytes(), data.toByteArray());
+        
+        ByteArrayOutputStream embedOutput = new ByteArrayOutputStream();
+                
+        new WebClient().downloadData(EXAMPLE_WEBSITE, embedOutput);
+        
+        Assert.assertArrayEquals(ExampleWebsiteHtmlBytes(), embedOutput.toByteArray());
 
     }
 
@@ -93,7 +95,8 @@ public class DownloadTests {
         File filePath = new File("test_example.html");
 
         filePath.deleteOnExit();
-        Shared.client.downloadFile(EXAMPLE_WEBSITE, filePath);
+        
+        new WebClient().downloadFile(EXAMPLE_WEBSITE, filePath);
 
         byte[] fileBytes = Files.readAllBytes(filePath.toPath());
 
@@ -106,9 +109,9 @@ public class DownloadTests {
     @Test
     public void downloadStringAsyncTest() throws Exception {
 
-        Future<String> contentFuture = Shared.client.downloadStringAsync(EXAMPLE_WEBSITE);
+        AsyncTask<String> contentFuture = new WebClient().downloadStringAsync(EXAMPLE_WEBSITE);
 
-        String content = contentFuture.get();
+        String content = contentFuture.await();
 
         Assert.assertEquals(EXAMPLE_WEBSITE_HTML, content);
 
@@ -117,9 +120,13 @@ public class DownloadTests {
     @Test
     public void downloadDataAsyncTest() throws Exception {
 
-        Future<ByteArrayOutputStream> futureData = Shared.client.downloadDataAsync(EXAMPLE_WEBSITE);
-
-        byte[] data = futureData.get().toByteArray();
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        
+        AsyncTask future = new WebClient().downloadDataAsync(EXAMPLE_WEBSITE, output);
+        
+        future.await();
+        
+        byte[] data = output.toByteArray();
 
         Assert.assertArrayEquals(ExampleWebsiteHtmlBytes(), data);
 
@@ -132,12 +139,10 @@ public class DownloadTests {
 
         filePath.deleteOnExit();
 
-        Future<Boolean> result = Shared.client.downloadFileAsync(EXAMPLE_WEBSITE, filePath);
+        AsyncTask result = new WebClient().downloadFileAsync(EXAMPLE_WEBSITE, filePath);
 
-        boolean success = result.get();
-
-        Assert.assertTrue(success);
-
+        result.await();
+        
         byte[] fileBytes = Files.readAllBytes(filePath.toPath());
 
         Assert.assertArrayEquals(ExampleWebsiteHtmlBytes(), fileBytes);

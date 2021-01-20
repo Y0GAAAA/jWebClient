@@ -3,8 +3,6 @@ package tests;
 import java.net.MalformedURLException;
 import java.net.URL;
 
-import com.y0ga.Networking.WebClient;
-
 public class Shared {
 
     public static URL GetURLFromString(String str) {
@@ -14,10 +12,15 @@ public class Shared {
         } catch (MalformedURLException ignored) {return null;}
 
     }
-
-    public static final WebClient client = new WebClient();
-
+    
+    /**
+     * URL pointing to a 1MB file
+     */
     public static final URL SMALL_FILE_URL = GetURLFromString("http://www.ovh.net/files/1Mio.dat");
+    
+    /**
+     * URL pointing to a 10GB file.
+     */
     public static final URL HUGE_FILE_URL = GetURLFromString("http://www.ovh.net/files/10Gio.dat");
 
 }

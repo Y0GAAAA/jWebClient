@@ -33,8 +33,14 @@ public class SpeedLimitTests {
 
         client.setDownloadBandwidthLimit(new BandwidthLimitation(SizeUnit.KiloByte, (short) 100));
 
-        int elapsed = GetExecutionTime(() -> client.downloadData(Shared.SMALL_FILE_URL));
-
+        int elapsed = GetExecutionTime(() -> {
+        
+            client.downloadData(Shared.SMALL_FILE_URL, new AimlessOutputStream());
+    
+            return null;
+        
+        });
+        
         if (elapsed < 1000 * 10) { //if it took less than 10 seconds at the rate of 100kb/s for 1Mb
             assert(false); //Shit happened
         }
@@ -49,14 +55,15 @@ public class SpeedLimitTests {
         client.setDownloadBandwidthLimit(new BandwidthLimitation(SizeUnit.KiloByte, (short) 50));
 
         int elapsed = GetExecutionTime(() -> {
-
-            client.downloadDataAsync(Shared.SMALL_FILE_URL);
-            client.downloadDataAsync(Shared.SMALL_FILE_URL);
-
+            
+            client.downloadDataAsync(Shared.SMALL_FILE_URL, new AimlessOutputStream());
+            client.downloadDataAsync(Shared.SMALL_FILE_URL, new AimlessOutputStream());
+    
             while (client.isBusy())
                 Thread.sleep(10);
-
+    
             return null;
+
 
         });
 

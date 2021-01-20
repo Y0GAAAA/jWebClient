@@ -4,6 +4,8 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 
+import com.y0ga.Networking.Asynchronous.AsyncTask;
+import com.y0ga.Networking.WebClient;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -42,11 +44,11 @@ public class AbortionTests {
     @Test
     public void testAsyncForbiddenError() {
 
-        Future<String> futureString = Shared.client.downloadStringAsync(FORBIDDEN_URL);
+        AsyncTask<String> futureString = new WebClient().downloadStringAsync(FORBIDDEN_URL);
 
         try {
 
-            futureString.get();
+            futureString.await();
 
         }
         catch (ExecutionException ignored) {return;}
@@ -61,7 +63,7 @@ public class AbortionTests {
     
         try {
         
-            Shared.client.downloadData(FORBIDDEN_URL);
+            new WebClient().downloadData(FORBIDDEN_URL, new AimlessOutputStream());
         
         } catch (IOException ignored) {return;}
     
@@ -72,11 +74,11 @@ public class AbortionTests {
     //@Test //for some reason can't detect unexpected stream closing yet...
     public void testAsyncInterruptedError() {
         
-        Future<String> futureString = Shared.client.downloadStringAsync(INTERRUPTED_URL);
+        AsyncTask<String> futureString = new WebClient().downloadStringAsync(INTERRUPTED_URL);
         
         try {
             
-            futureString.get();
+            futureString.await();
             
         }
         catch (Exception ignored) {return;}
@@ -90,7 +92,7 @@ public class AbortionTests {
     
         try {
         
-            ByteArrayOutputStream x = Shared.client.downloadData(INTERRUPTED_URL);
+            new WebClient().downloadData(INTERRUPTED_URL, new AimlessOutputStream());
             
         }
         catch (IOException ignored) {return;}

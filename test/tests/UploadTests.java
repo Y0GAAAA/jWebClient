@@ -4,6 +4,8 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 
+import com.y0ga.Networking.Asynchronous.AsyncTask;
+import com.y0ga.Networking.WebClient;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -40,8 +42,8 @@ public class UploadTests {
 
     @Test
     public void testUploadString() throws Exception {
-
-        String echo = Shared.client.uploadString(ECHO_URL, TESTING_STRING);
+        
+        String echo = new WebClient().uploadString(ECHO_URL, TESTING_STRING);
 
         Assert.assertEquals(TESTING_STRING, echo);
 
@@ -49,21 +51,21 @@ public class UploadTests {
 
     @Test
     public void testUploadData() throws Exception {
+        
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+    
+        new WebClient().uploadData(ECHO_URL, new ByteArrayInputStream(TESTING_STRING.getBytes()), output);
 
-        byte[] data = TESTING_STRING.getBytes();
-
-        byte[] echo = Shared.client.uploadData(ECHO_URL, new ByteArrayInputStream(data)).toByteArray();
-
-        Assert.assertArrayEquals(data, echo);
+        Assert.assertArrayEquals(TESTING_STRING.getBytes(), output.toByteArray());
 
     }
 
     @Test
     public void testUploadStringAsync() throws Exception {
 
-        Future<String> echoFuture = Shared.client.uploadStringAsync(ECHO_URL, TESTING_STRING);
+        AsyncTask<String> echoFuture = new WebClient().uploadStringAsync(ECHO_URL, TESTING_STRING);
 
-        String echo = echoFuture.get();
+        String echo = echoFuture.await();
 
         Assert.assertEquals(TESTING_STRING, echo);
 
@@ -74,9 +76,13 @@ public class UploadTests {
 
         byte[] data = TESTING_STRING.getBytes();
 
-        Future<ByteArrayOutputStream> dataFuture = Shared.client.uploadDataAsync(ECHO_URL, new ByteArrayInputStream(data));
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        
+        AsyncTask dataFuture = new WebClient().uploadDataAsync(ECHO_URL, new ByteArrayInputStream(data), output);
 
-        byte[] echo = dataFuture.get().toByteArray();
+        dataFuture.await();
+        
+        byte[] echo = output.toByteArray();
 
         Assert.assertArrayEquals(data, echo);
 

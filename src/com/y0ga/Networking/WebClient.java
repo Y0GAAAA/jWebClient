@@ -2,6 +2,7 @@ package com.y0ga.Networking;
 
 import com.y0ga.Networking.Exceptions.IllegalBandwidthException;
 import com.y0ga.Networking.Exceptions.InvalidBufferSizeException;
+import com.y0ga.Networking.Asynchronous.AsyncTask;
 
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
@@ -58,7 +59,7 @@ public class WebClient {
         
         HttpURLConnection connection = getConnection(url, method, specification);
         
-        HttpIOStreamTunnel tunnel = null;
+        HttpIOStreamTunnel tunnel;
         
         switch (method) {
             
@@ -78,6 +79,7 @@ public class WebClient {
         return tunnel;
         
     }
+    
     private StreamCopySettings getCopySettings(OperationType operationType) {
 
         long maxBytes = (operationType == OperationType.Download) ? DownloadBandwidthLimit.getMaximumBytesSecond() : UploadBandwidthLimit.getMaximumBytesSecond();
@@ -86,12 +88,12 @@ public class WebClient {
 
     }
     
-    private <K> Future<K> getFuture(Callable<K> r) {
-
-        return ThreadPool.submit(r);
-
+    private <T> AsyncTask<T> getAsyncTask(Callable<T> callable) {
+    
+        return new AsyncTask(ThreadPool.submit(callable));
+    
     }
-
+    
     //endregion
 
     //region PROPERTIES
@@ -228,141 +230,95 @@ public class WebClient {
     //endregion
 
     //region PUBLIC FUNCTIONS
-
-    /**
-     * Sends a GET request to the specified URL.
-     * @return The read bytes from the response content.
-     * @throws IOException
-     */
-    public ByteArrayOutputStream downloadData(URL url) throws IOException {
-
-        return internalDownloadData(url, RequestSpecification.DownloadBytes, SyncType.Synchronous);
-
-    }
     
-    /**
-     * Sends a GET request to the specified URL.
-     * @return The read string decoded with the specified encoding.
-     * @throws IOException
-     */ 
+    //region SYNCHRONOUS
+    
+    public void downloadData(URL url, OutputStream output) throws IOException {
+    
+        internalDownloadData(url, RequestSpecification.DownloadBytes, SyncType.Synchronous, output);
+    
+    }
     public String downloadString(URL url) throws IOException {
 
         return internalDownloadString(url, RequestSpecification.DownloadString, SyncType.Synchronous);
 
     }
-
-    /**
-     * Sends a GET request to the specified URL and saves the response bytes to a file.
-     * @throws IOException
-     */
     public void downloadFile(URL url, File localFile) throws IOException {
 
         internalDownloadFile(url, localFile, RequestSpecification.DownloadFile, SyncType.Synchronous);
 
     }
-
-    /**
-     * Sends a GET request to the specified URL.
-     * @return Future&lt;ByteArrayOutputStream&gt; that will contain the response bytes when read.
-     */
-    public Future<ByteArrayOutputStream> downloadDataAsync(URL url) {
-
-        TaskCounter.incrementRunningTaskCount();
-
-        return getFuture(() -> internalDownloadData(url, RequestSpecification.DownloadBytes, SyncType.Asynchronous));
-
+    
+    public void uploadData(URL url, InputStream data, OutputStream output) throws IOException {
+        
+        internalUploadData(url, data, output, RequestSpecification.PostBytes, SyncType.Synchronous);
+        
     }
-
-    /**
-     * Sends a GET request to the specified URL.
-     * @return Future&lt;String&gt; that will contain the response string when read and decoded with the specified encoding.
-     */
-    public Future<String> downloadStringAsync(URL url) {
-
-        TaskCounter.incrementRunningTaskCount();
-
-        return getFuture(() -> internalDownloadString(url, RequestSpecification.DownloadString, SyncType.Asynchronous));
-
-    }
-
-    /**
-     * Sends a GET request to the specified URL.
-     * @return Future&lt;Boolean&gt; that indicates if no error were encountered.
-     */
-    public Future<Boolean> downloadFileAsync(URL remoteFileUrl, File localFile) {
-
-        TaskCounter.incrementRunningTaskCount();
-
-        return getFuture(() -> internalDownloadFile(remoteFileUrl, localFile, RequestSpecification.DownloadFile, SyncType.Asynchronous));
-
-    }
-
-    /**
-     * Sends a POST request to the specified URL with the specified byte array as the request body.
-     * @return The response bytes.
-     * @throws IOException
-     */
-    public ByteArrayOutputStream uploadData(URL url, ByteArrayInputStream data) throws IOException {
-
-        return internalUploadData(url, data, RequestSpecification.PostBytes, SyncType.Synchronous);
-
-    }
-
-    /**
-     * Sends a POST request to the specified URL with the specified string encoded with the specified encoding as the request body.
-     * @return The response string decoded with the specified encoding.
-     * @throws IOException
-     */
     public String uploadString(URL url, String string) throws IOException {
-
+        
         return internalUploadString(url, string, RequestSpecification.PostString, SyncType.Synchronous);
-
+        
     }
+    
+    //endregion
+    
+    //region ASYNCHRONOUS
+    
+    public AsyncTask downloadDataAsync(URL url, OutputStream output) {
+        
+        TaskCounter.incrementRunningTaskCount();
 
-    /**
-     * Sends a POST request to the specified URL with the specified byte array as the request body.
-     * @return Future&lt;ByteArrayOutputStream&gt; that will contain the response bytes when read.
-     */
-    public Future<ByteArrayOutputStream> uploadDataAsync(URL url, ByteArrayInputStream data) {
+        return getAsyncTask(() -> internalDownloadData(url, RequestSpecification.DownloadBytes, SyncType.Asynchronous, output));
+        
+    }
+    public AsyncTask<String> downloadStringAsync(URL url) {
 
         TaskCounter.incrementRunningTaskCount();
 
-        return getFuture(() -> internalUploadData(url, data, RequestSpecification.PostBytes, SyncType.Asynchronous));
+        return getAsyncTask(() -> internalDownloadString(url, RequestSpecification.DownloadString, SyncType.Asynchronous));
 
     }
-
-    /**
-     * Sends a POST request to the specified URL with the specified string as the request body.
-     * @return Future&lt;String&gt; that will contain the response string when read and decoded with the specified encoding.
-     */
-    public Future<String> uploadStringAsync(URL url, String string) {
+    public AsyncTask downloadFileAsync(URL remoteFileUrl, File localFile) {
 
         TaskCounter.incrementRunningTaskCount();
 
-        return getFuture(() -> internalUploadString(url, string, RequestSpecification.PostString, SyncType.Asynchronous));
+        return getAsyncTask(() -> internalDownloadFile(remoteFileUrl, localFile, RequestSpecification.DownloadFile, SyncType.Asynchronous));
 
     }
+    
+    public AsyncTask uploadDataAsync(URL url, InputStream input, OutputStream output) {
+        
+        TaskCounter.incrementRunningTaskCount();
+        
+        return getAsyncTask(() -> internalUploadData(url, input, output, RequestSpecification.PostBytes, SyncType.Asynchronous));
+        
+    }
+    public AsyncTask<String> uploadStringAsync(URL url, String string) {
+        
+        TaskCounter.incrementRunningTaskCount();
+        
+        return getAsyncTask(() -> internalUploadString(url, string, RequestSpecification.PostString, SyncType.Asynchronous));
+        
+    }
+    
+    //endregion
 
     //endregion
 
     //region INTERNAL FUNCTIONS
 
-    private ByteArrayOutputStream internalDownloadData(URL url, RequestSpecification specification, SyncType syncType) throws IOException {
+    private Void internalDownloadData(URL url, RequestSpecification specification, SyncType syncType, OutputStream output) throws IOException {
 
         if (syncType == SyncType.Synchronous) { TaskCounter.incrementRunningTaskCount(); }
-    
-        ByteArrayOutputStream finalOutput;
         
         try {
     
-            finalOutput = new ByteArrayOutputStream();
-    
-            createTunnel(url, HttpMethod.GET, specification, null, finalOutput)
+            createTunnel(url, HttpMethod.GET, specification, null, output)
                         .copy(getCopySettings(OperationType.Download))
                         .close(false, true);
     
-            return finalOutput;
-    
+            return null;
+            
         } catch (IOException ex) {throw ex;}
         finally {
             TaskCounter.decrementRunningTaskCount();
@@ -389,7 +345,7 @@ public class WebClient {
         }
 
     }
-    private boolean internalDownloadFile(URL fileUrl, File localFile, RequestSpecification specification, SyncType syncType) throws IOException {
+    private Void internalDownloadFile(URL fileUrl, File localFile, RequestSpecification specification, SyncType syncType) throws IOException {
     
         if (syncType == SyncType.Synchronous) { TaskCounter.incrementRunningTaskCount(); }
     
@@ -400,9 +356,9 @@ public class WebClient {
             createTunnel(fileUrl, HttpMethod.GET, specification, null, fileOutputStream)
                     .copy(getCopySettings(OperationType.Download))
                     .close(true, true);
-    
-            return true;
-    
+            
+            return null;
+            
         } catch (Exception ex) {throw ex;}
         finally {
             TaskCounter.decrementRunningTaskCount();
@@ -410,7 +366,7 @@ public class WebClient {
         
     }
 
-    private ByteArrayOutputStream internalUploadData(URL url, ByteArrayInputStream data, RequestSpecification specification, SyncType syncType) throws IOException {
+    private Void internalUploadData(URL url, InputStream data, OutputStream output, RequestSpecification specification, SyncType syncType) throws IOException {
 
         if (syncType == SyncType.Synchronous) { TaskCounter.incrementRunningTaskCount(); }
         
@@ -420,14 +376,12 @@ public class WebClient {
             
             reqTunnel = createTunnel(url, HttpMethod.POST, specification, data, null)
                                  .copy(getCopySettings(OperationType.Upload));
-    
-            ByteArrayOutputStream responseOutputStream = new ByteArrayOutputStream();
-
-            new HttpIOStreamTunnel(reqTunnel.getUnderlyingInput(), responseOutputStream)
+            
+            new HttpIOStreamTunnel(reqTunnel.getUnderlyingInput(), output)
                                   .copy(getCopySettings(OperationType.Download))
                                   .close(false, true);
     
-            return responseOutputStream;
+            return null;
     
         } finally {
             TaskCounter.decrementRunningTaskCount();
@@ -460,7 +414,7 @@ public class WebClient {
         }
     
     }
-    private void internalUploadFile(URL url, File file, RequestSpecification specification, SyncType syncType) {
+    private Void internalUploadFile(URL url, File file, RequestSpecification specification, SyncType syncType) {
 
         throw new NotImplementedException();
 
