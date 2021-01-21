@@ -233,27 +233,56 @@ public class WebClient {
     
     //region SYNCHRONOUS
     
+    /**
+     * Sends a GET request.
+     * @param output The output stream to which the response bytes will be written.
+     * @throws IOException
+     */
     public void downloadData(URL url, OutputStream output) throws IOException {
     
         internalDownloadData(url, RequestSpecification.DownloadBytes, SyncType.Synchronous, output);
     
     }
+    
+    /**
+     * Sends a GET request.
+     * @return The response content as a string.
+     * @throws IOException
+     */
     public String downloadString(URL url) throws IOException {
 
         return internalDownloadString(url, RequestSpecification.DownloadString, SyncType.Synchronous);
 
     }
+    
+    /**
+     * Sends a GET request.
+     * @param localFile The local file to which the response bytes will be written.
+     * @throws IOException
+     */
     public void downloadFile(URL url, File localFile) throws IOException {
 
         internalDownloadFile(url, localFile, RequestSpecification.DownloadFile, SyncType.Synchronous);
 
     }
     
+    /**
+     * Sends a POST request.
+     * @param data The input stream containing the POST request content.
+     * @param output The output stream that will contain the POST response content.
+     * @throws IOException
+     */
     public void uploadData(URL url, InputStream data, OutputStream output) throws IOException {
         
         internalUploadData(url, data, output, RequestSpecification.PostBytes, SyncType.Synchronous);
         
     }
+    
+    /**
+     * Sends a POST request.
+     * @param string The input string used as the POST request content.     * @return
+     * @throws IOException
+     */
     public String uploadString(URL url, String string) throws IOException {
         
         return internalUploadString(url, string, RequestSpecification.PostString, SyncType.Synchronous);
@@ -264,6 +293,11 @@ public class WebClient {
     
     //region ASYNCHRONOUS
     
+    /**
+     * Asynchronously sends a GET request.
+     * @param output The output stream to which the response bytes will be written.
+     * @return A typeless AsyncTask that can be awaited.
+     */
     public AsyncTask downloadDataAsync(URL url, OutputStream output) {
         
         TaskCounter.incrementRunningTaskCount();
@@ -271,6 +305,11 @@ public class WebClient {
         return getAsyncTask(() -> internalDownloadData(url, RequestSpecification.DownloadBytes, SyncType.Asynchronous, output));
         
     }
+    
+    /**
+     * Asynchronously sends a GET request.
+     * @return The response content as a string wrapped in an AsyncTask that can be awaited.
+     */
     public AsyncTask<String> downloadStringAsync(URL url) {
 
         TaskCounter.incrementRunningTaskCount();
@@ -278,6 +317,12 @@ public class WebClient {
         return getAsyncTask(() -> internalDownloadString(url, RequestSpecification.DownloadString, SyncType.Asynchronous));
 
     }
+    
+    /**
+     * Asynchronously sends a GET request.
+     * @param localFile The local file to which the response bytes will be written.
+     * @return A typeless AsyncTask that can be awaited.
+     */
     public AsyncTask downloadFileAsync(URL remoteFileUrl, File localFile) {
 
         TaskCounter.incrementRunningTaskCount();
@@ -286,6 +331,12 @@ public class WebClient {
 
     }
     
+    /**
+     * Asynchronously sends a POST request.
+     * @param input The input stream containing the POST request content.
+     * @param output The output stream that will contain the POST response content.
+     * @return A typeless AsyncTask that can be awaited.
+     */
     public AsyncTask uploadDataAsync(URL url, InputStream input, OutputStream output) {
         
         TaskCounter.incrementRunningTaskCount();
@@ -293,6 +344,12 @@ public class WebClient {
         return getAsyncTask(() -> internalUploadData(url, input, output, RequestSpecification.PostBytes, SyncType.Asynchronous));
         
     }
+    
+    /**
+     * Asynchronously sends a POST request.
+     * @param string The input string used as the POST request content.
+     * @return The response content as a string wrapped in an AsyncTask that can be awaited.
+     */
     public AsyncTask<String> uploadStringAsync(URL url, String string) {
         
         TaskCounter.incrementRunningTaskCount();
