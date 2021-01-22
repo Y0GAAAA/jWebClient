@@ -19,7 +19,6 @@ import java.util.concurrent.Executors;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 
 /**
  * The client object that can perform http requests.
@@ -228,8 +227,6 @@ public class WebClient {
     public int getRunningTaskCount() { return TaskCounter.getRunningTaskCount(); }
 
     //endregion
-
-    //region PUBLIC FUNCTIONS
     
     //region SYNCHRONOUS
     
@@ -359,9 +356,7 @@ public class WebClient {
     }
     
     //endregion
-
-    //endregion
-
+    
     //region INTERNAL FUNCTIONS
 
     private Void internalDownloadData(URL url, RequestSpecification specification, SyncType syncType, OutputStream output) throws IOException {
