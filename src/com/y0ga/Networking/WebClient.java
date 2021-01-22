@@ -94,7 +94,7 @@ public class WebClient {
     }
     
     //endregion
-
+    
     //region PROPERTIES
 
     private BandwidthLimitation     DownloadBandwidthLimit  = BandwidthLimitation.UNLIMITED;
